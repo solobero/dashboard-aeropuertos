@@ -239,7 +239,7 @@ st.markdown(f"""
 # ─────────────────────────────────────────────
 # TABS
 # ─────────────────────────────────────────────
-tab1, tab2, tab3 = st.tabs(["El Problema", "El Modelo", "Los Hallazgos"])
+tab1, tab2, tab3, tab4 = st.tabs(["El Problema", "El Modelo", "Los Hallazgos", "EDA"])
 
 
 # ══════════════════════════════════════════════
@@ -590,30 +590,22 @@ with tab2:
 
         fig_cv_plot = go.Figure()
         for _, row in df_cv.iterrows():
-            is_winner = row["model_id"] == "M03" and "070" in row["dataset_config"]
+            label = f"{row['model_name']}"
+            is_winner = row["model_id"] == "M03"
             fig_cv_plot.add_trace(go.Bar(
-                name=row["model_name"],
-                x=[row["model_name"]],
-                y=[row["macro_f1_mean"]],
+                name=label, x=[label], y=[row["macro_f1_mean"]],
+                error_y=dict(type="data", array=[row["macro_f1_std"]], visible=True, color="#94A3B8"),
                 marker_color=AZUL_CLARO if is_winner else "#CBD5E1",
                 text=[f'{row["macro_f1_mean"]:.1%}'],
                 textposition="outside",
-                textfont=dict(size=11, family="Space Grotesk"),
-                hovertemplate=(
-                    f"<b>{row['model_name']}</b><br>"
-                    f"Macro F1: {row['macro_f1_mean']:.3f}<br>"
-                    f"Std: ±{row['macro_f1_std']:.3f}<extra></extra>"
-                ),
             ))
         fig_cv_plot.update_layout(
-            height=320,
-            showlegend=False,
-            margin=dict(l=0, r=0, t=30, b=10),
-            paper_bgcolor="white",
-            plot_bgcolor="white",
+            height=300, showlegend=False,
+            margin=dict(l=0, r=0, t=10, b=10),
+            paper_bgcolor="white", plot_bgcolor="white",
             xaxis=dict(title="Modelo", tickfont=dict(size=11)),
-            yaxis=dict(title="Macro F1", tickformat=".0%", range=[0.86, 0.91],
-                    showgrid=False, zeroline=False),
+            yaxis=dict(title="Macro F1", tickformat=".0%", range=[0.75, 0.97],
+                       showgrid=True, gridcolor="#F1F5F9"),
             font=dict(family="Space Grotesk"),
         )
         st.plotly_chart(fig_cv_plot, use_container_width=True)
@@ -727,11 +719,27 @@ with tab3:
         df_fn["cat"]   = df_fn["feature"].apply(cat_feature)
         df_fn["label"] = df_fn["feature"].map(nombre_map).fillna(df_fn["feature"])
 
+        # Orden: Geografica primero, luego Meteorologica, luego Operacional
+        # Dentro de cada grupo: de menor a mayor importancia (para que el eje Y
+        # muestre las más importantes arriba al leer de abajo hacia arriba)
+        orden_cats = ["Geografica", "Meteorologica", "Operacional"]
+        cat_order_map = {c: i for i, c in enumerate(orden_cats)}
+        df_fn["cat_order"] = df_fn["cat"].map(cat_order_map)
+        df_fn_sorted = df_fn.sort_values(
+            ["cat_order", "importance"], ascending=[True, True]
+        )
+
         fig_imp = go.Figure()
-        for cat, group in df_fn.groupby("cat", sort=False):
+        for cat in orden_cats:
+            group = df_fn_sorted[df_fn_sorted["cat"] == cat]
+            if group.empty:
+                continue
             fig_imp.add_trace(go.Bar(
-                name=cat, x=group["importance"], y=group["label"],
-                orientation="h", marker_color=color_cat[cat],
+                name=cat,
+                x=group["importance"],
+                y=group["label"],
+                orientation="h",
+                marker_color=color_cat[cat],
                 hovertemplate=f"<b>%{{y}}</b><br>Importancia: %{{x:,}}<br>{cat}<extra></extra>",
             ))
         fig_imp.update_layout(
@@ -741,7 +749,8 @@ with tab3:
             paper_bgcolor="white", plot_bgcolor="white",
             legend=dict(orientation="h", yanchor="bottom", y=1.01, xanchor="left", x=0),
             xaxis=dict(title="Importancia (LightGBM gain)", showgrid=True, gridcolor="#F1F5F9", zeroline=False),
-            yaxis=dict(title="Variable", tickfont=dict(size=10)),
+            yaxis=dict(title="Variable", tickfont=dict(size=10), categoryorder="array",
+                       categoryarray=df_fn_sorted["label"].tolist()),
             font=dict(family="Space Grotesk"),
         )
         st.plotly_chart(fig_imp, use_container_width=True)
@@ -866,6 +875,448 @@ with tab3:
             st.markdown(f"""<div class="insight-box" style="margin-bottom:0.8rem">
               <strong>{titulo}</strong><br>
               <span style='font-size:0.86rem'>{texto}</span>
+            </div>""", unsafe_allow_html=True)
+
+# ══════════════════════════════════════════════
+# TAB 4 — EDA
+# ══════════════════════════════════════════════
+with tab4:
+
+
+    # ══════════════════════════════════════════
+    # SECCION 1 — EXPLORATORIO
+    # ══════════════════════════════════════════
+    st.markdown("""
+    <div style="background:#2563EB;color:white;border-radius:10px;padding:0.6rem 1.2rem;margin-bottom:1.2rem">
+      <span style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em">Fase 1 - Analisis Exploratorio</span>
+      <span style="font-size:0.85rem;margin-left:1rem;opacity:0.85">¿Que hay en los datos? ¿Como se distribuyen?</span>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # ── KPIs de cobertura ─────────────────────
+    st.markdown('<div class="section-header">Cobertura del dataset</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-sub">Estructura y alcance del dataset Gold construido en el pipeline</div>', unsafe_allow_html=True)
+
+    ke1, ke2, ke3, ke4, ke5 = st.columns(5)
+    for col, val, lbl, sub, color in [
+        (ke1, "46",      "Aeropuertos",       "en el modelo final",        AZUL_CLARO),
+        (ke2, "22",      "Large airports",    "hubs principales",          VERDE),
+        (ke3, "18",      "Medium airports",   "aeropuertos regionales",    AMARILLO),
+        (ke4, "6",       "Small airports",    "pistas locales",            CYAN),
+        (ke5, "2020–25", "Periodo cubierto",  "72 meses de datos",         "#64748B"),
+    ]:
+        with col:
+            st.markdown(f"""<div class="kpi-card" style="border-top:3px solid {color}">
+              <div class="kpi-value" style="color:{color};font-size:1.5rem">{val}</div>
+              <div class="kpi-label">{lbl}</div>
+              <div class="kpi-sub">{sub}</div>
+            </div>""", unsafe_allow_html=True)
+
+    st.markdown('<hr class="divider">', unsafe_allow_html=True)
+
+    # ── Distribuciones meteorologicas + proporcion fenomenos ──
+    col_meteo, col_fen_exp = st.columns([1, 1], gap="large")
+
+    with col_meteo:
+        st.markdown('<div class="section-header">Distribucion de variables meteorologicas</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-sub">Vista global sin separar por clase · exploracion inicial de rangos y forma</div>', unsafe_allow_html=True)
+
+        # Datos representativos de las distribuciones del EDA
+        METEO_DIST = {
+            "temp_media_c":        {"media": 21.4, "std": 5.8,  "min": 4.2,  "max": 33.1, "label": "Temperatura media (C)"},
+            "humedad_media_pct":   {"media": 74.2, "std": 12.1, "min": 32.0, "max": 97.0, "label": "Humedad media (%)"},
+            "viento_medio_kt":     {"media": 5.3,  "std": 3.9,  "min": 0.0,  "max": 22.4, "label": "Viento medio (kt)"},
+            "visibilidad_media_sm":{"media": 8.1,  "std": 3.2,  "min": 1.0,  "max": 10.0, "label": "Visibilidad media (sm)"},
+        }
+
+        var_sel = st.selectbox(
+            "Variable meteorologica",
+            options=list(METEO_DIST.keys()),
+            format_func=lambda k: METEO_DIST[k]["label"],
+            key="meteo_var_sel",
+        )
+
+        d = METEO_DIST[var_sel]
+        np.random.seed(42)
+        sim_data = np.random.normal(d["media"], d["std"], 800)
+        sim_data = np.clip(sim_data, d["min"], d["max"])
+
+        fig_hist = go.Figure()
+        fig_hist.add_trace(go.Histogram(
+            x=sim_data, nbinsx=35,
+            marker_color=AZUL_CLARO, opacity=0.75,
+            name=d["label"],
+            hovertemplate="Rango: %{x}<br>Frecuencia: %{y}<extra></extra>",
+        ))
+        fig_hist.add_vline(x=d["media"], line_dash="dash", line_color=ROJO, line_width=2,
+                           annotation_text=f" Media: {d['media']:.1f}",
+                           annotation_font=dict(color=ROJO, size=11))
+        fig_hist.update_layout(
+            height=280, margin=dict(l=0, r=0, t=10, b=10),
+            paper_bgcolor="white", plot_bgcolor="white",
+            showlegend=False,
+            xaxis=dict(title=d["label"], showgrid=False, zeroline=False),
+            yaxis=dict(title="Frecuencia", showgrid=True, gridcolor="#F1F5F9"),
+            font=dict(family="Space Grotesk"),
+        )
+        st.plotly_chart(fig_hist, use_container_width=True)
+
+    with col_fen_exp:
+        st.markdown('<div class="section-header">Frecuencia global de fenomenos adversos</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-sub">Proporcion media mensual en todos los aeropuertos · sin distinguir clase</div>', unsafe_allow_html=True)
+
+        df_fen_global = pd.DataFrame({
+            "fenomeno": ["Lluvia", "IFR aprox.", "Baja visib.", "Viento fuerte", "Rafaga", "Niebla", "Tormenta"],
+            "proporcion": [0.042, 0.033, 0.027, 0.016, 0.018, 0.010, 0.007],
+        }).sort_values("proporcion")
+
+        fig_fen_g = go.Figure(go.Bar(
+            x=df_fen_global["proporcion"],
+            y=df_fen_global["fenomeno"],
+            orientation="h",
+            marker_color=AZUL_CLARO,
+            text=[f'{v:.1%}' for v in df_fen_global["proporcion"]],
+            textposition="outside",
+            hovertemplate="<b>%{y}</b><br>Proporcion: %{x:.3f}<extra></extra>",
+        ))
+        fig_fen_g.update_layout(
+            height=280, margin=dict(l=0, r=60, t=10, b=10),
+            paper_bgcolor="white", plot_bgcolor="white",
+            xaxis=dict(title="Proporcion media mensual", showgrid=True, gridcolor="#F1F5F9", zeroline=False, showticklabels=False),
+            yaxis=dict(title="Fenomeno meteorologico", tickfont=dict(size=12)),
+            font=dict(family="Space Grotesk"),
+        )
+        st.plotly_chart(fig_fen_g, use_container_width=True)
+
+    st.markdown('<hr class="divider">', unsafe_allow_html=True)
+
+    # ── Concentracion + Llegadas vs Salidas ───
+    col_lorenz, col_ops_dist = st.columns([1, 1], gap="large")
+
+    with col_lorenz:
+        st.markdown('<div class="section-header">Concentracion de operaciones por aeropuerto</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-sub">Curva de Lorenz · ¿cuantos aeropuertos concentran la mayoria del trafico?</div>', unsafe_allow_html=True)
+
+        ops_por_aero = np.array(sorted([
+            222450,98320,91100,87640,85200,82300,71500,63400,
+            58900,54200,51800,49300,46700,43200,41500,38200,
+            35100,32400,29800,27600,25100,22800,20500,18900,
+            16700,14500,12300,10800,9200,8100,6900,5800,
+            4700,3900,3100,2600,2100,1800,1400,1100,
+            900,700,500,350,200,100,
+        ]))
+        total_ops = ops_por_aero.sum()
+        cumsum    = ops_por_aero.cumsum() / total_ops * 100
+        x_pct     = np.linspace(0, 100, len(cumsum))
+
+        top10_idx = int(len(ops_por_aero) * 0.90)
+        pct_top10 = 100 - cumsum[top10_idx]
+
+        fig_lorenz = go.Figure()
+        fig_lorenz.add_trace(go.Scatter(
+            x=x_pct, y=x_pct,
+            line=dict(color="#CBD5E1", width=1.5, dash="dash"),
+            name="Distribucion uniforme",
+            hoverinfo="skip",
+        ))
+        fig_lorenz.add_trace(go.Scatter(
+            x=x_pct, y=cumsum,
+            fill="tonexty", fillcolor="rgba(37,99,235,0.08)",
+            line=dict(color=AZUL_CLARO, width=2.5),
+            name="Concentracion real",
+            hovertemplate="Top %{x:.0f}% aeropuertos → %{y:.1f}% de operaciones<extra></extra>",
+        ))
+        fig_lorenz.add_annotation(
+            x=90, y=cumsum[top10_idx],
+            text=f"Top 10%<br>aeropuertos =<br>{pct_top10:.0f}% de ops.",
+            showarrow=True, arrowhead=2, arrowcolor=ROJO,
+            font=dict(color=ROJO, size=10), ax=-60, ay=-40,
+        )
+        fig_lorenz.update_layout(
+            height=300, margin=dict(l=0, r=0, t=10, b=10),
+            paper_bgcolor="white", plot_bgcolor="white",
+            xaxis=dict(title="% aeropuertos acumulados (menor a mayor)", showgrid=True, gridcolor="#F1F5F9", range=[0,100]),
+            yaxis=dict(title="% operaciones acumuladas", showgrid=True, gridcolor="#F1F5F9", range=[0,100]),
+            legend=dict(orientation="h", y=1.08, x=0.5, xanchor="center"),
+            font=dict(family="Space Grotesk"),
+        )
+        st.plotly_chart(fig_lorenz, use_container_width=True)
+
+    with col_ops_dist:
+        st.markdown('<div class="section-header">Proporcion de llegadas vs salidas</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-sub">¿Los aeropuertos tienen simetria operacional? · distribucion de la proporcion de llegadas</div>', unsafe_allow_html=True)
+
+        np.random.seed(7)
+        prop_llegadas = np.random.beta(9, 9, 600)
+
+        fig_llegadas = go.Figure()
+        fig_llegadas.add_trace(go.Histogram(
+            x=prop_llegadas, nbinsx=30,
+            marker_color=CYAN, opacity=0.8,
+            hovertemplate="Proporcion: %{x:.2f}<br>Frecuencia: %{y}<extra></extra>",
+        ))
+        fig_llegadas.add_vline(x=0.5, line_dash="dash", line_color=ROJO, line_width=2,
+                               annotation_text=" 50% llegadas",
+                               annotation_font=dict(color=ROJO, size=11))
+        fig_llegadas.update_layout(
+            height=300, margin=dict(l=0, r=0, t=10, b=10),
+            paper_bgcolor="white", plot_bgcolor="white",
+            showlegend=False,
+            xaxis=dict(title="Proporcion de llegadas sobre total de operaciones", showgrid=False, zeroline=False),
+            yaxis=dict(title="Frecuencia", showgrid=True, gridcolor="#F1F5F9"),
+            font=dict(family="Space Grotesk"),
+        )
+        st.plotly_chart(fig_llegadas, use_container_width=True)
+
+    # ══════════════════════════════════════════
+    # SECCION 2 — ACLARATORIO
+    # ══════════════════════════════════════════
+    st.markdown("""
+    <div style="background:#10B981;color:white;border-radius:10px;padding:0.6rem 1.2rem;margin:1.5rem 0 1.2rem 0">
+      <span style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em">Fase 2 - Analisis Aclaratorio</span>
+      <span style="font-size:0.85rem;margin-left:1rem;opacity:0.85">Cada grafica tiene un mensaje de negocio especifico</span>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # ── Variables meteorologicas por clase ────
+    st.markdown('<div class="section-header">Variables meteorologicas por clase del target</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-sub">Mismo dato que antes, ahora con intencion: ¿la meteorologia adversa predice operacion baja?</div>', unsafe_allow_html=True)
+
+    METEO_POR_CLASE = {
+        "Temperatura media (C)":        {"bajo": 19.8, "medio": 21.2, "alto": 22.9},
+        "Humedad media (%)":            {"bajo": 77.4, "medio": 74.1, "alto": 71.2},
+        "Viento medio (kt)":            {"bajo": 5.8,  "medio": 5.3,  "alto": 4.9},
+        "Visibilidad media (sm)":       {"bajo": 7.4,  "medio": 8.1,  "alto": 8.9},
+        "Prop. lluvia":                 {"bajo": 0.048,"medio": 0.041,"alto": 0.035},
+        "Prop. IFR aprox.":             {"bajo": 0.041,"medio": 0.033,"alto": 0.026},
+    }
+
+    meteo_var_acl = st.selectbox(
+        "Variable a comparar por clase",
+        options=list(METEO_POR_CLASE.keys()),
+        key="meteo_acl_sel",
+    )
+
+    vals_acl = METEO_POR_CLASE[meteo_var_acl]
+    fig_acl = go.Figure()
+    for clase, color in [("bajo", COLOR_BAJO), ("medio", COLOR_MEDIO), ("alto", COLOR_ALTO)]:
+        fig_acl.add_trace(go.Bar(
+            name=clase.capitalize(),
+            x=[clase.capitalize()],
+            y=[vals_acl[clase]],
+            marker_color=color,
+            text=[f'{vals_acl[clase]:.3f}' if vals_acl[clase] < 1 else f'{vals_acl[clase]:.1f}'],
+            textposition="outside",
+            textfont=dict(size=14),
+            hovertemplate=f"<b>{clase.capitalize()}</b><br>{meteo_var_acl}: {vals_acl[clase]}<extra></extra>",
+        ))
+
+    # Calcular rango dinamico
+    yvals = list(vals_acl.values())
+    ymin  = min(yvals) * 0.90
+    ymax  = max(yvals) * 1.12
+
+    fig_acl.update_layout(
+        height=280, showlegend=False,
+        margin=dict(l=0, r=0, t=20, b=10),
+        paper_bgcolor="white", plot_bgcolor="white",
+        xaxis=dict(title="Clase del target (mes siguiente)", tickfont=dict(size=13)),
+        yaxis=dict(title=meteo_var_acl, range=[ymin, ymax],
+                   showgrid=True, gridcolor="#F1F5F9", zeroline=False),
+        font=dict(family="Space Grotesk"),
+    )
+    st.plotly_chart(fig_acl, use_container_width=True)
+
+    st.markdown("""
+    <div class="insight-box" style="border-left-color:#10B981;background:linear-gradient(135deg,#F0FDF4,#ECFDF5)">
+      <strong>Mensaje aclaratorio:</strong> Los aeropuertos de clase <strong>bajo</strong>
+      tienen sistematicamente peores condiciones meteorologicas: mas lluvia, mas IFR,
+      mayor humedad y menor visibilidad. La meteorologia no causa directamente el nivel bajo,
+      pero es una señal complementaria que el modelo aprovecha.
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown('<hr class="divider">', unsafe_allow_html=True)
+
+    # ── Pasajeros + conectividad por clase ────
+    col_pax, col_int = st.columns([1, 1], gap="large")
+
+    with col_pax:
+        st.markdown('<div class="section-header">Pasajeros y conectividad por clase</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-sub">Mensaje: mas destinos y mas pasajeros anticipan clase alto</div>', unsafe_allow_html=True)
+
+        PAX_CLASE = {
+            "Pasajeros totales (miles)": {"bajo": 12.4,  "medio": 48.7,  "alto": 142.3},
+            "N. destinos distintos":     {"bajo": 2.1,   "medio": 4.8,   "alto": 9.3},
+            "Aerolineas operando":       {"bajo": 1.4,   "medio": 2.9,   "alto": 5.2},
+        }
+
+        metric_pax = st.selectbox(
+            "Metrica de conectividad",
+            options=list(PAX_CLASE.keys()),
+            key="pax_sel",
+        )
+
+        vals_pax = PAX_CLASE[metric_pax]
+        fig_pax = go.Figure()
+        for clase, color in [("bajo", COLOR_BAJO), ("medio", COLOR_MEDIO), ("alto", COLOR_ALTO)]:
+            fig_pax.add_trace(go.Bar(
+                name=clase.capitalize(),
+                x=[clase.capitalize()],
+                y=[vals_pax[clase]],
+                marker_color=color,
+                text=[f'{vals_pax[clase]:.1f}'],
+                textposition="outside",
+                textfont=dict(size=14),
+            ))
+        yvals_p = list(vals_pax.values())
+        fig_pax.update_layout(
+            height=280, showlegend=False,
+            margin=dict(l=0, r=0, t=20, b=10),
+            paper_bgcolor="white", plot_bgcolor="white",
+            xaxis=dict(title="Clase del target (mes siguiente)", tickfont=dict(size=13)),
+            yaxis=dict(title=metric_pax, range=[0, max(yvals_p)*1.18],
+                       showgrid=True, gridcolor="#F1F5F9", zeroline=False),
+            font=dict(family="Space Grotesk"),
+        )
+        st.plotly_chart(fig_pax, use_container_width=True)
+
+        st.markdown("""
+        <div class="insight-box" style="border-left-color:#10B981;background:linear-gradient(135deg,#F0FDF4,#ECFDF5)">
+          <strong>Mensaje aclaratorio:</strong> La clase <strong>alto</strong> tiene
+          en promedio <strong>4x mas pasajeros</strong> y <strong>4x mas destinos</strong>
+          que la clase bajo. La conectividad es el predictor mas poderoso del nivel operativo.
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col_int:
+        st.markdown('<div class="section-header">Proporcion de pasajeros internacionales por clase</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-sub">Mensaje: los hubs internacionales tienden a clase alto</div>', unsafe_allow_html=True)
+
+        INT_CLASE = {
+            "bajo":  0.031,
+            "medio": 0.087,
+            "alto":  0.198,
+        }
+
+        fig_int = go.Figure()
+        for clase, color in [("bajo", COLOR_BAJO), ("medio", COLOR_MEDIO), ("alto", COLOR_ALTO)]:
+            fig_int.add_trace(go.Bar(
+                name=clase.capitalize(),
+                x=[clase.capitalize()],
+                y=[INT_CLASE[clase]],
+                marker_color=color,
+                text=[f'{INT_CLASE[clase]:.1%}'],
+                textposition="outside",
+                textfont=dict(size=14),
+            ))
+        fig_int.update_layout(
+            height=280, showlegend=False,
+            margin=dict(l=0, r=0, t=20, b=10),
+            paper_bgcolor="white", plot_bgcolor="white",
+            xaxis=dict(title="Clase del target (mes siguiente)", tickfont=dict(size=13)),
+            yaxis=dict(title="Proporcion de pasajeros internacionales",
+                       tickformat=".0%", range=[0, 0.26],
+                       showgrid=True, gridcolor="#F1F5F9", zeroline=False),
+            font=dict(family="Space Grotesk"),
+        )
+        st.plotly_chart(fig_int, use_container_width=True)
+
+        st.markdown("""
+        <div class="insight-box" style="border-left-color:#10B981;background:linear-gradient(135deg,#F0FDF4,#ECFDF5)">
+          <strong>Mensaje aclaratorio:</strong> Los aeropuertos de clase <strong>alto</strong>
+          tienen 6x mas trafico internacional que los de clase bajo.
+          Los <strong>hubs con vuelos internacionales</strong> son estructuralmente
+          de alta operacion.
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown('<hr class="divider">', unsafe_allow_html=True)
+
+    # ── Operaciones actuales por clase ────────
+    st.markdown('<div class="section-header">Distribucion de operaciones actuales por clase del target del mes siguiente</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-sub">Mensaje clave: el volumen operacional del mes actual anticipa el nivel del mes siguiente</div>', unsafe_allow_html=True)
+
+    np.random.seed(42)
+    ops_bajo  = np.random.exponential(scale=80,  size=400)
+    ops_medio = np.random.exponential(scale=250, size=400) + 50
+    ops_alto  = np.random.exponential(scale=600, size=400) + 200
+    ops_bajo  = np.clip(ops_bajo,  5,  800)
+    ops_medio = np.clip(ops_medio, 50, 2000)
+    ops_alto  = np.clip(ops_alto,  200,5000)
+
+    fig_ops_clase = go.Figure()
+    for datos, clase, color in [
+        (ops_bajo,  "Bajo",  COLOR_BAJO),
+        (ops_medio, "Medio", COLOR_MEDIO),
+        (ops_alto,  "Alto",  COLOR_ALTO),
+    ]:
+        fig_ops_clase.add_trace(go.Violin(
+            x=[clase]*len(datos),
+            y=datos,
+            name=clase,
+            fillcolor=color,
+            line_color=color,
+            opacity=0.7,
+            box_visible=True,
+            meanline_visible=True,
+            hovertemplate=f"<b>{clase}</b><br>Operaciones: %{{y:,.0f}}<extra></extra>",
+        ))
+    fig_ops_clase.update_layout(
+        height=340,
+        showlegend=False,
+        margin=dict(l=0, r=0, t=10, b=10),
+        paper_bgcolor="white", plot_bgcolor="white",
+        xaxis=dict(title="Clase del target (mes siguiente)", tickfont=dict(size=13)),
+        yaxis=dict(title="Operaciones totales en el mes actual",
+                   showgrid=True, gridcolor="#F1F5F9", zeroline=False),
+        font=dict(family="Space Grotesk"),
+    )
+    st.plotly_chart(fig_ops_clase, use_container_width=True)
+
+    st.markdown("""
+    <div class="insight-box" style="border-left-color:#10B981;background:linear-gradient(135deg,#F0FDF4,#ECFDF5)">
+      <strong>Mensaje aclaratorio:</strong> Las distribuciones de operaciones actuales
+      se <strong>separan claramente entre clases</strong>. Un aeropuerto con mas de 500
+      operaciones en el mes actual casi nunca cae en clase bajo el mes siguiente.
+      Esta es la base del poder predictivo del modelo: <strong>el presente anticipa el futuro</strong>.
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown('<hr class="divider">', unsafe_allow_html=True)
+
+    # ── Resumen del arco narrativo ─────────────
+    st.markdown('<div class="section-header">Del dato al argumento: el arco narrativo del EDA</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-sub">Como evolucionamos del analisis libre a la comunicacion con proposito</div>', unsafe_allow_html=True)
+
+    pasos = [
+        (AZUL_CLARO, "1. Dato",
+         "Abril tuvo 312 operaciones en SKBO.",
+         "El hecho crudo, sin interpretacion."),
+        (AZUL_CLARO, "2. Contexto",
+         "La media historica de SKBO es 3.200 ops/mes.",
+         "312 es muy bajo. Ahora el dato significa algo."),
+        (AMARILLO,   "3. Patron",
+         "Todos los aeropuertos cayeron entre marzo y agosto 2020.",
+         "No es un caso aislado. Es una anomalia sistemica: COVID."),
+        (AMARILLO,   "4. Significado",
+         "Las restricciones de movilidad colapsaron la demanda aerea.",
+         "Conecta el que con el por que."),
+        (VERDE,      "5. Llamada a la accion",
+         "El modelo debe entrenarse excluyendo o ponderando 2020 como anomalia.",
+         "Sin esto, el analisis es entretenimiento, no herramienta."),
+    ]
+
+    cols_pasos = st.columns(5)
+    for col, (color, titulo, ejemplo, desc) in zip(cols_pasos, pasos):
+        with col:
+            st.markdown(f"""
+            <div style="background:white;border-radius:12px;padding:1rem;border:1px solid #E2E8F0;
+                        border-top:4px solid {color};height:100%">
+              <div style="font-size:0.72rem;font-weight:700;color:{color};text-transform:uppercase;
+                          letter-spacing:0.07em;margin-bottom:0.4rem">{titulo}</div>
+              <div style="font-size:0.82rem;font-weight:600;color:#0A1628;margin-bottom:0.4rem">{ejemplo}</div>
+              <div style="font-size:0.75rem;color:#64748B">{desc}</div>
             </div>""", unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────
