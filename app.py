@@ -894,10 +894,10 @@ with tab2:
     ke1, ke2, ke3, ke4, ke5 = st.columns(5)
     for col, val, lbl, sub, color in [
         (ke1, "46",      "Aeropuertos",       "en el modelo final",        AZUL_CLARO),
-        (ke2, "22",      "Large airports",    "hubs principales",          VERDE),
-        (ke3, "18",      "Medium airports",   "aeropuertos regionales",    AMARILLO),
-        (ke4, "6",       "Small airports",    "pistas locales",            CYAN),
-        (ke5, "2020–25", "Periodo cubierto",  "72 meses de datos",         "#64748B"),
+        (ke2, "22",      "Aeropuertos grandes",    "hubs principales",          VERDE),
+        (ke3, "18",      "Aeropuertos medianos",   "aeropuertos regionales",    AMARILLO),
+        (ke4, "6",       "Aeropuertos pequeños",    "pistas locales",            CYAN),
+        (ke5, "2020–2025", "Periodo cubierto",  "72 meses de datos",         "#64748B"),
     ]:
         with col:
             st.markdown(f"""<div class="kpi-card" style="border-top:3px solid {color}">
