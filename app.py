@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
+import plotly.express as px
 import json
 import numpy as np
 
@@ -168,6 +169,122 @@ base[covid_mask] *= np.linspace(0.15, 0.80, covid_mask.sum())
 ops_mensual = np.clip(base + np.random.normal(0, 300, len(meses)), 500, None)
 
 # ─────────────────────────────────────────────
+# DATOS GEOGRAFICOS DE AEROPUERTOS
+# ─────────────────────────────────────────────
+AIRPORT_GEO_DATA = pd.DataFrame([
+    {"name":"El Dorado Int.","icao_code":"SKBO","type":"large_airport","municipality":"Bogota","region_name":"Bogota D.C.","latitude_deg_num":4.7016,"longitude_deg_num":-74.1469,"operaciones_total_acum":222450,"pasajeros_total_acum":8500000},
+    {"name":"Jose M. Cordova","icao_code":"SKRG","type":"large_airport","municipality":"Rionegro","region_name":"Antioquia","latitude_deg_num":6.1645,"longitude_deg_num":-75.4231,"operaciones_total_acum":85200,"pasajeros_total_acum":3100000},
+    {"name":"Alfonso Bonilla","icao_code":"SKCL","type":"large_airport","municipality":"Palmira","region_name":"Valle del Cauca","latitude_deg_num":3.5432,"longitude_deg_num":-76.3816,"operaciones_total_acum":82300,"pasajeros_total_acum":2900000},
+    {"name":"Ernesto Cortissoz","icao_code":"SKBQ","type":"large_airport","municipality":"Barranquilla","region_name":"Atlantico","latitude_deg_num":10.8896,"longitude_deg_num":-74.7808,"operaciones_total_acum":87640,"pasajeros_total_acum":2700000},
+    {"name":"Rafael Nunez","icao_code":"SKCG","type":"large_airport","municipality":"Cartagena","region_name":"Bolivar","latitude_deg_num":10.4424,"longitude_deg_num":-75.5130,"operaciones_total_acum":72100,"pasajeros_total_acum":2400000},
+    {"name":"Camilo Daza","icao_code":"SKCU","type":"large_airport","municipality":"Cucuta","region_name":"Norte de Santander","latitude_deg_num":7.9276,"longitude_deg_num":-72.5115,"operaciones_total_acum":51800,"pasajeros_total_acum":1200000},
+    {"name":"Simon Bolivar","icao_code":"SKSM","type":"large_airport","municipality":"Santa Marta","region_name":"Magdalena","latitude_deg_num":11.1196,"longitude_deg_num":-74.2306,"operaciones_total_acum":49300,"pasajeros_total_acum":1100000},
+    {"name":"Matecana","icao_code":"SKPE","type":"large_airport","municipality":"Pereira","region_name":"Risaralda","latitude_deg_num":4.8127,"longitude_deg_num":-75.7395,"operaciones_total_acum":63400,"pasajeros_total_acum":1400000},
+    {"name":"Alfonso Lopez P.","icao_code":"SKVP","type":"large_airport","municipality":"Valledupar","region_name":"Cesar","latitude_deg_num":10.4350,"longitude_deg_num":-73.2495,"operaciones_total_acum":46700,"pasajeros_total_acum":900000},
+    {"name":"Palonegro","icao_code":"SKBG","type":"large_airport","municipality":"Bucaramanga","region_name":"Santander","latitude_deg_num":7.1265,"longitude_deg_num":-73.1848,"operaciones_total_acum":58200,"pasajeros_total_acum":1300000},
+    {"name":"Olaya Herrera","icao_code":"SKMD","type":"medium_airport","municipality":"Medellin","region_name":"Antioquia","latitude_deg_num":6.2199,"longitude_deg_num":-75.5906,"operaciones_total_acum":91100,"pasajeros_total_acum":1800000},
+    {"name":"Los Garzones","icao_code":"SKMR","type":"medium_airport","municipality":"Monteria","region_name":"Cordoba","latitude_deg_num":8.8237,"longitude_deg_num":-75.8258,"operaciones_total_acum":98320,"pasajeros_total_acum":1100000},
+    {"name":"La Florida","icao_code":"SKCC","type":"medium_airport","municipality":"Cucuta","region_name":"Norte de Santander","latitude_deg_num":7.9276,"longitude_deg_num":-72.5115,"operaciones_total_acum":58900,"pasajeros_total_acum":950000},
+    {"name":"El Carano","icao_code":"SKUI","type":"medium_airport","municipality":"Quibdo","region_name":"Choco","latitude_deg_num":5.6908,"longitude_deg_num":-76.6412,"operaciones_total_acum":54200,"pasajeros_total_acum":420000},
+    {"name":"Las Brujas","icao_code":"SKCZ","type":"medium_airport","municipality":"Corozal","region_name":"Sucre","latitude_deg_num":9.3347,"longitude_deg_num":-75.2856,"operaciones_total_acum":43200,"pasajeros_total_acum":380000},
+    {"name":"Santa Ana","icao_code":"SKGO","type":"medium_airport","municipality":"Cartago","region_name":"Valle del Cauca","latitude_deg_num":4.7279,"longitude_deg_num":-75.9557,"operaciones_total_acum":41500,"pasajeros_total_acum":350000},
+    {"name":"Gustavo Rojas P.","icao_code":"SKSP","type":"medium_airport","municipality":"San Andres","region_name":"San Andres","latitude_deg_num":12.5836,"longitude_deg_num":-81.7112,"operaciones_total_acum":71500,"pasajeros_total_acum":1600000},
+    {"name":"El Alcaravan","icao_code":"SKAQ","type":"medium_airport","municipality":"Arauca","region_name":"Arauca","latitude_deg_num":7.0849,"longitude_deg_num":-70.7369,"operaciones_total_acum":28400,"pasajeros_total_acum":210000},
+    {"name":"Vanguardia","icao_code":"SKVV","type":"medium_airport","municipality":"Villavicencio","region_name":"Meta","latitude_deg_num":4.1679,"longitude_deg_num":-73.6138,"operaciones_total_acum":35100,"pasajeros_total_acum":290000},
+    {"name":"Benito Salas","icao_code":"SKNV","type":"medium_airport","municipality":"Neiva","region_name":"Huila","latitude_deg_num":2.9502,"longitude_deg_num":-75.2937,"operaciones_total_acum":32400,"pasajeros_total_acum":260000},
+    {"name":"Antonio Roldan B.","icao_code":"SKLC","type":"medium_airport","municipality":"Apartado","region_name":"Antioquia","latitude_deg_num":7.8120,"longitude_deg_num":-76.7164,"operaciones_total_acum":27600,"pasajeros_total_acum":200000},
+    {"name":"Gustavo Artunduaga","icao_code":"SKFL","type":"medium_airport","municipality":"Florencia","region_name":"Caqueta","latitude_deg_num":1.5892,"longitude_deg_num":-75.5644,"operaciones_total_acum":22800,"pasajeros_total_acum":175000},
+    {"name":"El Embrujo","icao_code":"SKPV","type":"small_airport","municipality":"Providencia","region_name":"San Andres","latitude_deg_num":13.3569,"longitude_deg_num":-81.3583,"operaciones_total_acum":8100,"pasajeros_total_acum":62000},
+    {"name":"Tres de Mayo","icao_code":"SKPS","type":"small_airport","municipality":"Puerto Asis","region_name":"Putumayo","latitude_deg_num":0.5053,"longitude_deg_num":-76.5009,"operaciones_total_acum":12300,"pasajeros_total_acum":85000},
+    {"name":"Jorge E. Gonzalez","icao_code":"SKUC","type":"small_airport","municipality":"Arauca","region_name":"Arauca","latitude_deg_num":7.0688,"longitude_deg_num":-70.7369,"operaciones_total_acum":9200,"pasajeros_total_acum":71000},
+    {"name":"Yariguies","icao_code":"SKEJ","type":"small_airport","municipality":"Barrancabermeja","region_name":"Santander","latitude_deg_num":7.0243,"longitude_deg_num":-73.8068,"operaciones_total_acum":10800,"pasajeros_total_acum":78000},
+    {"name":"Almirante Padilla","icao_code":"SKRH","type":"small_airport","municipality":"Riohacha","region_name":"La Guajira","latitude_deg_num":11.5262,"longitude_deg_num":-72.9260,"operaciones_total_acum":14500,"pasajeros_total_acum":110000},
+    {"name":"San Luis","icao_code":"SKIB","type":"small_airport","municipality":"Ibague","region_name":"Tolima","latitude_deg_num":4.4216,"longitude_deg_num":-75.1333,"operaciones_total_acum":16700,"pasajeros_total_acum":125000},
+])
+
+def mostrar_mapa_aeropuertos(df_pd, height=520):
+    """Mapa interactivo de aeropuertos colombianos coloreado por tipo."""
+    color_map = {
+        "large_airport":  "#E63946",
+        "medium_airport": "#F77F00",
+        "small_airport":  "#0077B6",
+    }
+    label_map = {
+        "large_airport":  "Hub principal",
+        "medium_airport": "Regional",
+        "small_airport":  "Local",
+    }
+    df_pd = df_pd.copy()
+    df_pd["tipo_label"] = df_pd["type"].map(label_map).fillna(df_pd["type"])
+    df_pd["color"]      = df_pd["type"].map(color_map).fillna("#94A3B8")
+
+    fig = go.Figure()
+    for tipo, label, color in [
+        ("large_airport",  "Hub principal", "#E63946"),
+        ("medium_airport", "Regional",      "#F77F00"),
+        ("small_airport",  "Local",         "#0077B6"),
+    ]:
+        sub = df_pd[df_pd["type"] == tipo]
+        if sub.empty:
+            continue
+        fig.add_trace(go.Scattergeo(
+            lat=sub["latitude_deg_num"],
+            lon=sub["longitude_deg_num"],
+            mode="markers",
+            name=label,
+            marker=dict(
+                size=sub["operaciones_total_acum"].apply(lambda x: max(8, min(22, x / 10000 + 8))),
+                color=color,
+                opacity=0.85,
+                line=dict(width=1, color="white"),
+            ),
+            text=sub["name"],
+            customdata=sub[["icao_code","municipality","region_name","operaciones_total_acum","pasajeros_total_acum"]].values,
+            hovertemplate=(
+                "<b>%{text}</b> (%{customdata[0]})<br>"
+                "Municipio: %{customdata[1]}<br>"
+                "Region: %{customdata[2]}<br>"
+                "Operaciones acum.: %{customdata[3]:,}<br>"
+                "Pasajeros acum.: %{customdata[4]:,}<extra></extra>"
+            ),
+        ))
+
+    fig.update_layout(
+        height=height,
+        margin=dict(l=0, r=0, t=10, b=0),
+        paper_bgcolor="white",
+        geo=dict(
+            scope="south america",
+            center=dict(lat=4.5709, lon=-74.2973),
+            projection_scale=6,
+            showland=True,
+            landcolor="#F1F5F9",
+            showocean=True,
+            oceancolor="#DBEAFE",
+            showcountries=True,
+            countrycolor="#CBD5E1",
+            showcoastlines=True,
+            coastlinecolor="#94A3B8",
+            showrivers=False,
+            showlakes=False,
+            bgcolor="white",
+        ),
+        legend=dict(
+            orientation="h",
+            y=-0.05,
+            x=0.5,
+            xanchor="center",
+            bgcolor="rgba(255,255,255,0.9)",
+            bordercolor="#E2E8F0",
+            borderwidth=1,
+            font=dict(family="Space Grotesk", size=12),
+        ),
+        font=dict(family="Space Grotesk"),
+    )
+    return fig
+
+
+# ─────────────────────────────────────────────
 # SIDEBAR — FILTROS GLOBALES
 # ─────────────────────────────────────────────
 with st.sidebar:
@@ -233,9 +350,27 @@ tab1, tab2, tab3, tab4 = st.tabs(["El Problema", "EDA", "Modelo", "Hallazgos"])
 # ══════════════════════════════════════════════
 with tab1:
 
+    # ── Mapa geografico ────────────────────────
+    st.markdown('<div class="section-header">Distribucion geografica de aeropuertos en Colombia</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-sub">46 aeropuertos en el dataset · tamano del punto proporcional a operaciones acumuladas · coloreado por tipo</div>', unsafe_allow_html=True)
+
+    fig_mapa = mostrar_mapa_aeropuertos(AIRPORT_GEO_DATA, height=500)
+    st.plotly_chart(fig_mapa, use_container_width=True)
+
+    st.markdown("""
+    <div class="insight-box">
+      Los <strong>hubs principales</strong> (rojo) concentran la mayoria del trafico y se ubican
+      en las ciudades mas pobladas. Los aeropuertos <strong>regionales</strong> (naranja) cubren
+      capitales de departamento, mientras que los <strong>locales</strong> (azul) dan conectividad
+      a zonas de dificil acceso como Choco, Putumayo y la Guajira.
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown('<hr class="divider">', unsafe_allow_html=True)
+
     # ── KPIs superiores ───────────────────────
-    st.markdown('<div class="section-header">Contexto del problema</div>', unsafe_allow_html=True)
-    st.markdown('<div class="section-sub">Volumetria del pipeline y resultado del modelo final</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-header">Problema de negocio</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-sub">La necesidad de clasificar anticipadamente el nivel de operacion aerea mensual de los aeropuertos en Colombia, de tal forma que sea posible identificar si el siguiente mes presentara un comportamiento bajo, medio o alto en terminos operacionales.</div>', unsafe_allow_html=True)
 
     c1, c2, c3, c4, c5, c6 = st.columns(6)
     kpis_top = [
@@ -255,6 +390,8 @@ with tab1:
             </div>""", unsafe_allow_html=True)
 
     st.markdown('<hr class="divider">', unsafe_allow_html=True)
+
+
 
     # ── Pregunta de oro + pipeline ─────────────
     col_left, col_right = st.columns([1, 1], gap="large")
