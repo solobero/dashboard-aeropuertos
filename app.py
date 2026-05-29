@@ -173,16 +173,7 @@ ops_mensual = np.clip(base + np.random.normal(0, 300, len(meses)), 500, None)
 with st.sidebar:
     st.markdown("## Filtros")
     st.markdown("---")
-
-    # Tab 1 — El Problema
-    st.markdown("### El Problema")
-    top_n_airports = st.slider(
-        "Top N aeropuertos",
-        min_value=5, max_value=15, value=15, step=5,
-    )
-
-    st.markdown("---")
-
+    
     # Tab 2 — El Modelo
     st.markdown("### El Modelo")
 
@@ -204,11 +195,6 @@ with st.sidebar:
 
     # Tab 3 — Los Hallazgos
     st.markdown("### Los Hallazgos")
-
-    top_n_features = st.slider(
-        "Top N variables (importancia)",
-        min_value=5, max_value=20, value=20, step=5,
-    )
 
     clases_sel = st.multiselect(
         "Clases de fenomenos meteorologicos",
@@ -239,7 +225,7 @@ st.markdown(f"""
 # ─────────────────────────────────────────────
 # TABS
 # ─────────────────────────────────────────────
-tab1, tab2, tab3, tab4 = st.tabs(["El Problema", "El Modelo", "Los Hallazgos", "EDA"])
+tab1, tab2, tab3, tab4 = st.tabs(["El Problema", "EDA", "Modelo", "Hallazgos"])
 
 
 # ══════════════════════════════════════════════
@@ -359,11 +345,11 @@ with tab1:
     col_top, col_dist = st.columns([1.2, 0.8], gap="large")
 
     with col_top:
-        st.markdown(f'<div class="section-header">Top {top_n_airports} aeropuertos por operaciones acumuladas</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-header">Top 15 aeropuertos por operaciones acumuladas</div>', unsafe_allow_html=True)
         st.markdown('<div class="section-sub">2020-2025 · Bogota concentra el 22% del total del sistema</div>', unsafe_allow_html=True)
 
         df_top_full = pd.DataFrame(TOP15_DATA)
-        df_top_filt = df_top_full.head(top_n_airports).sort_values("operaciones")
+        df_top_filt = df_top_full.head(15).sort_values("operaciones")
         colors_top  = [AZUL_CLARO if "SKBO" in l else "#93C5FD" for l in df_top_filt["label"]]
 
         fig_top = go.Figure(go.Bar(
@@ -374,7 +360,7 @@ with tab1:
             hovertemplate="<b>%{y}</b><br>Operaciones acumuladas: %{x:,.0f}<extra></extra>",
         ))
         fig_top.update_layout(
-            height=max(260, top_n_airports * 32),
+            height=460,
             margin=dict(l=0, r=90, t=10, b=10),
             paper_bgcolor="white", plot_bgcolor="white",
             xaxis=dict(title="Operaciones acumuladas 2020-2025", showgrid=True, gridcolor="#F1F5F9", zeroline=False, showticklabels=False),
@@ -424,9 +410,9 @@ with tab1:
 
 
 # ══════════════════════════════════════════════
-# TAB 2 — EL MODELO
+# TAB 3 — EL MODELO
 # ══════════════════════════════════════════════
-with tab2:
+with tab3:
 
     # Aplicar filtros del sidebar
     df_base = df_val[~df_val["experiment_id"].str.contains("hp|optuna", case=False)].copy()
@@ -590,22 +576,30 @@ with tab2:
 
         fig_cv_plot = go.Figure()
         for _, row in df_cv.iterrows():
-            label = f"{row['model_name']}"
-            is_winner = row["model_id"] == "M03"
+            is_winner = row["model_id"] == "M03" and "070" in row["dataset_config"]
             fig_cv_plot.add_trace(go.Bar(
-                name=label, x=[label], y=[row["macro_f1_mean"]],
-                error_y=dict(type="data", array=[row["macro_f1_std"]], visible=True, color="#94A3B8"),
+                name=row["model_name"],
+                x=[row["model_name"]],
+                y=[row["macro_f1_mean"]],
                 marker_color=AZUL_CLARO if is_winner else "#CBD5E1",
                 text=[f'{row["macro_f1_mean"]:.1%}'],
                 textposition="outside",
+                textfont=dict(size=11, family="Space Grotesk"),
+                hovertemplate=(
+                    f"<b>{row['model_name']}</b><br>"
+                    f"Macro F1: {row['macro_f1_mean']:.3f}<br>"
+                    f"Std: ±{row['macro_f1_std']:.3f}<extra></extra>"
+                ),
             ))
         fig_cv_plot.update_layout(
-            height=300, showlegend=False,
-            margin=dict(l=0, r=0, t=10, b=10),
-            paper_bgcolor="white", plot_bgcolor="white",
+            height=320,
+            showlegend=False,
+            margin=dict(l=0, r=0, t=30, b=10),
+            paper_bgcolor="white",
+            plot_bgcolor="white",
             xaxis=dict(title="Modelo", tickfont=dict(size=11)),
-            yaxis=dict(title="Macro F1", tickformat=".0%", range=[0.75, 0.97],
-                       showgrid=True, gridcolor="#F1F5F9"),
+            yaxis=dict(title="Macro F1", tickformat=".0%", range=[0.86, 0.91],
+                    showgrid=False, zeroline=False),
             font=dict(family="Space Grotesk"),
         )
         st.plotly_chart(fig_cv_plot, use_container_width=True)
@@ -647,9 +641,9 @@ with tab2:
 
 
 # ══════════════════════════════════════════════
-# TAB 3 — LOS HALLAZGOS
+# TAB 4 — LOS HALLAZGOS
 # ══════════════════════════════════════════════
-with tab3:
+with tab4:
 
     # ── KPIs de error superiores ───────────────
     st.markdown('<div class="section-header">Resumen de desempeno en test</div>', unsafe_allow_html=True)
@@ -680,7 +674,7 @@ with tab3:
     col_imp, col_err_plot = st.columns([1.1, 0.9], gap="large")
 
     with col_imp:
-        st.markdown(f'<div class="section-header">Top {top_n_features} variables por importancia</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-header">Top 20 variables por importancia</div>', unsafe_allow_html=True)
         st.markdown('<div class="section-sub">LightGBM gain · coloreadas por categoria · usa el slider del panel izquierdo</div>', unsafe_allow_html=True)
 
         nombre_map = {
@@ -715,7 +709,7 @@ with tab3:
 
         color_cat = {"Operacional": AZUL_CLARO, "Meteorologica": AMARILLO, "Geografica": CYAN}
 
-        df_fn = df_feat.head(top_n_features).sort_values("importance", ascending=True).copy()
+        df_fn = df_feat.head(20).sort_values("importance", ascending=True).copy()
         df_fn["cat"]   = df_fn["feature"].apply(cat_feature)
         df_fn["label"] = df_fn["feature"].map(nombre_map).fillna(df_fn["feature"])
 
@@ -743,7 +737,7 @@ with tab3:
                 hovertemplate=f"<b>%{{y}}</b><br>Importancia: %{{x:,}}<br>{cat}<extra></extra>",
             ))
         fig_imp.update_layout(
-            height=max(320, top_n_features * 28),
+            height=560,
             barmode="stack",
             margin=dict(l=0, r=20, t=10, b=10),
             paper_bgcolor="white", plot_bgcolor="white",
@@ -878,9 +872,9 @@ with tab3:
             </div>""", unsafe_allow_html=True)
 
 # ══════════════════════════════════════════════
-# TAB 4 — EDA
+# TAB 2 — EDA
 # ══════════════════════════════════════════════
-with tab4:
+with tab2:
 
 
     # ══════════════════════════════════════════
