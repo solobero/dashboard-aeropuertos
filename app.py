@@ -590,22 +590,30 @@ with tab2:
 
         fig_cv_plot = go.Figure()
         for _, row in df_cv.iterrows():
-            label = f"{row['model_name']}"
-            is_winner = row["model_id"] == "M03"
+            is_winner = row["model_id"] == "M03" and "070" in row["dataset_config"]
             fig_cv_plot.add_trace(go.Bar(
-                name=label, x=[label], y=[row["macro_f1_mean"]],
-                error_y=dict(type="data", array=[row["macro_f1_std"]], visible=True, color="#94A3B8"),
+                name=row["model_name"],
+                x=[row["model_name"]],
+                y=[row["macro_f1_mean"]],
                 marker_color=AZUL_CLARO if is_winner else "#CBD5E1",
                 text=[f'{row["macro_f1_mean"]:.1%}'],
                 textposition="outside",
+                textfont=dict(size=11, family="Space Grotesk"),
+                hovertemplate=(
+                    f"<b>{row['model_name']}</b><br>"
+                    f"Macro F1: {row['macro_f1_mean']:.3f}<br>"
+                    f"Std: ±{row['macro_f1_std']:.3f}<extra></extra>"
+                ),
             ))
         fig_cv_plot.update_layout(
-            height=300, showlegend=False,
-            margin=dict(l=0, r=0, t=10, b=10),
-            paper_bgcolor="white", plot_bgcolor="white",
+            height=320,
+            showlegend=False,
+            margin=dict(l=0, r=0, t=30, b=10),
+            paper_bgcolor="white",
+            plot_bgcolor="white",
             xaxis=dict(title="Modelo", tickfont=dict(size=11)),
-            yaxis=dict(title="Macro F1", tickformat=".0%", range=[0.75, 0.97],
-                       showgrid=True, gridcolor="#F1F5F9"),
+            yaxis=dict(title="Macro F1", tickformat=".0%", range=[0.86, 0.91],
+                    showgrid=False, zeroline=False),
             font=dict(family="Space Grotesk"),
         )
         st.plotly_chart(fig_cv_plot, use_container_width=True)
