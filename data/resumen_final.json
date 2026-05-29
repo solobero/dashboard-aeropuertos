@@ -1,0 +1,13 @@
+{
+  "filas_dim_airports": 146,
+  "filas_trafico_od_bronze": 455787,
+  "filas_operaciones_bronze": 550724,
+  "filas_operations_airport_month": 8673,
+  "filas_od_airport_month": 5898,
+  "filas_silver_iem": 1182458,
+  "filas_weather_monthly": 2495,
+  "filas_dataset_final": 3300,
+  "filas_dataset_modelo": 3254,
+  "aeropuertos_dataset_final": 46,
+  "aeropuertos_dataset_modelo": 46
+}

@@ -1,0 +1,10 @@
+clase_pred,clase_real,label_pred,label_real,n
+bajo,bajo,0,0,86
+medio,bajo,1,0,13
+alto,bajo,2,0,0
+bajo,medio,0,1,9
+medio,medio,1,1,104
+alto,medio,2,1,13
+bajo,alto,0,2,0
+medio,alto,1,2,13
+alto,alto,2,2,125
