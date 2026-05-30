@@ -6,7 +6,7 @@ import json
 import numpy as np
 
 st.set_page_config(
-    page_title="Colombia Airport Operations",
+    page_title="Operacion Aeroportuaria Colombia",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -14,65 +14,181 @@ st.set_page_config(
 # ─────────────────────────────────────────────
 # PALETA
 # ─────────────────────────────────────────────
-AZUL_OSCURO = "#0A1628"
-AZUL_CLARO  = "#2563EB"
-CYAN        = "#06B6D4"
-VERDE       = "#10B981"
-AMARILLO    = "#F59E0B"
-ROJO        = "#EF4444"
+CIELO       = "#0EA5E9"
+NOCHE       = "#0C1A2E"
+RADAR       = "#10B981"
+ALERTA      = "#F59E0B"
+PELIGRO     = "#EF4444"
+INSTRUMENTO = "#6366F1"
 
-COLOR_BAJO  = "#06B6D4"
-COLOR_MEDIO = "#F59E0B"
-COLOR_ALTO  = "#10B981"
+COLOR_BAJO  = ALERTA
+COLOR_MEDIO = CIELO
+COLOR_ALTO  = RADAR
+
+COLOR_LARGE  = "#E63946"
+COLOR_MEDIUM = "#F77F00"
+COLOR_SMALL  = "#0077B6"
 
 # ─────────────────────────────────────────────
-# ESTILOS
+# ESTILOS — fondo blanco
 # ─────────────────────────────────────────────
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
-html, body, [class*="css"] { font-family: 'Space Grotesk', sans-serif; }
-.stApp { background-color: #F8FAFC; }
-.block-container { padding-top: 1.5rem !important; padding-left: 2rem !important; padding-right: 2rem !important; max-width: 1400px; }
-section[data-testid="stSidebar"] { background: #0A1628; }
-section[data-testid="stSidebar"] * { color: #E2E8F0 !important; }
-section[data-testid="stSidebar"] hr { border-color: #1E3A5F !important; }
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
-/* Labels */
-section[data-testid="stSidebar"] label p { color: #94A3B8 !important; font-size: 0.75rem !important; text-transform: uppercase; letter-spacing: 0.07em; }
+html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
+.stApp { background-color: #FFFFFF; }
+.block-container {
+    padding-top: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    max-width: 100% !important;
+}
 
-/* Slider thumb y track activo */
-section[data-testid="stSidebar"] [role="slider"] { background: #2563EB !important; border-color: #2563EB !important; }
-section[data-testid="stSidebar"] div[data-baseweb="slider"] div[style*="background"] { background-color: #2563EB !important; }
+/* Sidebar */
+section[data-testid="stSidebar"] {
+    background: #F8FAFC;
+    border-right: 1px solid #E2E8F0;
+}
+section[data-testid="stSidebar"] * { color: #1E293B !important; }
+section[data-testid="stSidebar"] hr { border-color: #E2E8F0 !important; }
+section[data-testid="stSidebar"] label p {
+    color: #64748B !important;
+    font-size: 0.72rem !important;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+section[data-testid="stSidebar"] div[data-baseweb="select"] > div {
+    background-color: white !important;
+    border-color: #E2E8F0 !important;
+    border-radius: 8px !important;
+}
+section[data-testid="stSidebar"] span[data-baseweb="tag"] {
+    background-color: #0EA5E9 !important;
+    border-color: #0EA5E9 !important;
+    border-radius: 6px !important;
+}
+section[data-testid="stSidebar"] span[data-baseweb="tag"] span {
+    color: white !important;
+}
 
-/* Multiselect contenedor */
-section[data-testid="stSidebar"] div[data-baseweb="select"] { background-color: #1E3A5F !important; border-color: #2D5086 !important; border-radius: 8px !important; }
-section[data-testid="stSidebar"] div[data-baseweb="select"] > div { background-color: #1E3A5F !important; border-color: #2D5086 !important; border-radius: 8px !important; }
+/* Card aeropuerto */
+.airport-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1rem 1.1rem;
+    margin: 0.5rem 0;
+    border: 1px solid #E2E8F0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.airport-card-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #0F172A;
+    margin-bottom: 0.1rem;
+}
+.airport-card-icao {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #0EA5E9;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.08em;
+}
+.airport-stat {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.26rem 0;
+    border-bottom: 1px solid #F1F5F9;
+    font-size: 0.8rem;
+}
+.airport-stat-label { color: #64748B; }
+.airport-stat-value { color: #0F172A; font-weight: 600; }
 
-/* Tags del multiselect */
-section[data-testid="stSidebar"] span[data-baseweb="tag"] { background-color: #1D4ED8 !important; border-color: #2563EB !important; border-radius: 6px !important; }
-section[data-testid="stSidebar"] span[data-baseweb="tag"] span { color: #E2E8F0 !important; font-size: 0.78rem !important; }
-section[data-testid="stSidebar"] span[data-baseweb="tag"] [role="button"] { color: #93C5FD !important; }
+/* Tabs */
+div[data-baseweb="tab-list"] {
+    gap: 0.3rem;
+    background: #F8FAFC !important;
+    border-radius: 10px;
+    padding: 0.2rem;
+    border: 1px solid #E2E8F0;
+    width: fit-content;
+    margin-bottom: 0;
+}
+div[data-baseweb="tab"] {
+    border-radius: 7px !important;
+    font-weight: 600 !important;
+    font-size: 0.82rem !important;
+    padding: 0.38rem 0.9rem !important;
+    color: #64748B !important;
+}
+div[data-baseweb="tab"][aria-selected="true"] {
+    background: #0EA5E9 !important;
+    color: white !important;
+}
 
-/* Dropdown menu opciones */
-ul[data-baseweb="menu"] { background-color: #1B3A6B !important; border-color: #2D5086 !important; }
-ul[data-baseweb="menu"] li { color: #E2E8F0 !important; background-color: transparent !important; }
-ul[data-baseweb="menu"] li:hover { background-color: #2563EB !important; }
-.kpi-card { background: white; border-radius: 14px; padding: 1.2rem 1.4rem; border: 1px solid #E2E8F0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-.kpi-value { font-size: 2rem; font-weight: 700; color: #0A1628; line-height: 1; margin-bottom: 0.25rem; }
-.kpi-label { font-size: 0.75rem; font-weight: 500; color: #64748B; text-transform: uppercase; letter-spacing: 0.08em; }
-.kpi-sub { font-size: 0.78rem; color: #94A3B8; margin-top: 0.3rem; }
-.section-header { font-size: 1.2rem; font-weight: 700; color: #0A1628; margin-bottom: 0.2rem; margin-top: 0.3rem; }
-.section-sub { font-size: 0.85rem; color: #64748B; margin-bottom: 1rem; }
-.insight-box { background: linear-gradient(135deg,#EFF6FF 0%,#F0FDF4 100%); border-left: 4px solid #2563EB; border-radius: 0 10px 10px 0; padding: 0.9rem 1.1rem; margin: 0.6rem 0; font-size: 0.88rem; color: #1E3A5F; }
-.insight-box strong { color: #0A1628; }
-.divider { border: none; border-top: 1px solid #E2E8F0; margin: 1.5rem 0; }
-.hero { background: linear-gradient(135deg,#0A1628 0%,#1B3A6B 60%,#1E40AF 100%); border-radius: 16px; padding: 1.8rem 2.2rem; margin-bottom: 1.5rem; color: white; }
-.hero-title { font-size: 1.7rem; font-weight: 700; line-height: 1.2; margin-bottom: 0.4rem; }
-.hero-sub { font-size: 0.9rem; opacity: 0.75; max-width: 600px; }
-.filter-label { font-size: 0.72rem; font-weight: 600; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.3rem; }
-div[data-baseweb="tab-list"] { gap: 0.4rem; background: white !important; border-radius: 10px; padding: 0.25rem; border: 1px solid #E2E8F0; width: fit-content; margin-bottom: 1.2rem; }
-div[data-baseweb="tab"] { border-radius: 7px !important; font-weight: 600 !important; font-size: 0.83rem !important; padding: 0.4rem 1rem !important; }
+/* Tab panel */
+.stTabs [data-baseweb="tab-panel"] {
+    padding: 1.2rem 2rem 2rem 2rem !important;
+    background: #FFFFFF;
+}
+
+/* Cards metricas */
+.kpi-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1rem 1.2rem;
+    border: 1px solid #E2E8F0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.kpi-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 0.2rem;
+}
+.kpi-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #64748B;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+}
+.kpi-sub { font-size: 0.72rem; color: #94A3B8; margin-top: 0.2rem; }
+
+/* Encabezados */
+.section-q {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #0F172A;
+    margin-bottom: 0.15rem;
+}
+.section-sub {
+    font-size: 0.82rem;
+    color: #64748B;
+    margin-bottom: 0.8rem;
+}
+
+/* Respuesta */
+.answer-box {
+    background: #F0F9FF;
+    border-left: 3px solid #0EA5E9;
+    border-radius: 0 8px 8px 0;
+    padding: 0.75rem 1rem;
+    margin: 0.6rem 0;
+    font-size: 0.84rem;
+    color: #1E293B;
+}
+.answer-box.verde {
+    background: #F0FDF4;
+    border-left-color: #10B981;
+}
+.answer-box.alerta {
+    background: #FFFBEB;
+    border-left-color: #F59E0B;
+}
+.answer-box strong { color: #0F172A; }
+
+.divider { border: none; border-top: 1px solid #F1F5F9; margin: 1.2rem 0; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -93,1372 +209,549 @@ def cargar_datos():
 
 df_val, df_feat, df_err, df_cv, meta, resumen = cargar_datos()
 
-m_test      = meta["metrics_test_final"]
-accuracy    = m_test["accuracy"]
-macro_f1    = m_test["macro_f1"]
-bal_acc     = m_test["balanced_accuracy"]
-n_eval      = m_test["n_eval"]
-model_name  = meta["final_model_name"]
-dataset_cfg = meta["final_dataset_config"]
-n_features  = meta["n_features"]
+m_test     = meta["metrics_test_final"]
+accuracy   = m_test["accuracy"]
+macro_f1   = m_test["macro_f1"]
+bal_acc    = m_test["balanced_accuracy"]
+n_eval     = m_test["n_eval"]
+model_name = meta["final_model_name"]
+n_features = meta["n_features"]
 
 # ─────────────────────────────────────────────
-# DATOS ESTATICOS DEL EDA
+# DATOS DE AEROPUERTOS
 # ─────────────────────────────────────────────
-TOP15_DATA = {
-    "label": [
-        "SKBO · El Dorado Int.",
-        "SKMR · Los Garzones",
-        "SKMD · Olaya Herrera",
-        "SKBQ · Ernesto Cortissoz",
-        "SKRG · Jose M. Cordova",
-        "SKCL · Alfonso Bonilla",
-        "SKSP · Gustavo Rojas P.",
-        "SKPE · Matecana",
-        "SKCC · La Florida",
-        "SKUI · El Carano",
-        "SKCU · Camilo Daza",
-        "SKSM · Simon Bolivar",
-        "SKVP · Alfonso Lopez P.",
-        "SKCZ · Las Brujas",
-        "SKGO · Santa Ana",
-    ],
-    "operaciones": [
-        222_450, 98_320, 91_100, 87_640, 85_200,
-        82_300, 71_500, 63_400, 58_900, 54_200,
-        51_800, 49_300, 46_700, 43_200, 41_500,
-    ],
-}
-
-FENOMENOS_DATA = {
-    "fenomeno": ["Lluvia", "Tormenta", "Niebla", "Baja visib.", "Viento fuerte", "Rafaga", "IFR"],
-    "bajo":  [0.048, 0.009, 0.012, 0.031, 0.018, 0.022, 0.041],
-    "medio": [0.041, 0.007, 0.010, 0.025, 0.015, 0.018, 0.033],
-    "alto":  [0.035, 0.005, 0.008, 0.019, 0.012, 0.014, 0.026],
-}
-
-CORR_DATA = {
-    "variable": [
-        "operaciones_total", "pasajeros_total", "operaciones_llegada",
-        "operaciones_salida", "n_destinos_total", "n_empresas_llegada",
-        "operaciones_total_lag_1", "pasajeros_total_lag_1",
-        "carga_total_kg", "operaciones_por_destino",
-        "prop_ifr_aprox", "prop_lluvia", "prop_tormenta",
-        "meteo_adverso_score", "prop_baja_visibilidad",
-    ],
-    "correlacion": [
-        0.87, 0.82, 0.81, 0.80, 0.76, 0.72,
-        0.71, 0.68, 0.65, 0.61,
-        -0.18, -0.14, -0.11, -0.16, -0.13,
-    ],
-}
-
-TARGET_ANIO = {
-    "anio": [2020,2020,2020,2021,2021,2021,2022,2022,2022,
-             2023,2023,2023,2024,2024,2024,2025,2025,2025],
-    "nivel": ["bajo","medio","alto"] * 6,
-    "n": [195,148,112, 162,158,135, 148,168,155,
-          142,172,162, 138,175,168, 131,178,172],
-}
-
-meses = pd.date_range("2020-01", "2025-12", freq="MS")
-np.random.seed(42)
-base = np.linspace(8000, 14500, len(meses))
-covid_mask = (meses >= "2020-03") & (meses <= "2020-09")
-base[covid_mask] *= np.linspace(0.15, 0.80, covid_mask.sum())
-ops_mensual = np.clip(base + np.random.normal(0, 300, len(meses)), 500, None)
-
-# ─────────────────────────────────────────────
-# DATOS GEOGRAFICOS DE AEROPUERTOS
-# ─────────────────────────────────────────────
-AIRPORT_GEO_DATA = pd.DataFrame([
-    {"name":"El Dorado Int.","icao_code":"SKBO","type":"large_airport","municipality":"Bogota","region_name":"Bogota D.C.","latitude_deg_num":4.7016,"longitude_deg_num":-74.1469,"operaciones_total_acum":222450,"pasajeros_total_acum":8500000},
-    {"name":"Jose M. Cordova","icao_code":"SKRG","type":"large_airport","municipality":"Rionegro","region_name":"Antioquia","latitude_deg_num":6.1645,"longitude_deg_num":-75.4231,"operaciones_total_acum":85200,"pasajeros_total_acum":3100000},
-    {"name":"Alfonso Bonilla","icao_code":"SKCL","type":"large_airport","municipality":"Palmira","region_name":"Valle del Cauca","latitude_deg_num":3.5432,"longitude_deg_num":-76.3816,"operaciones_total_acum":82300,"pasajeros_total_acum":2900000},
-    {"name":"Ernesto Cortissoz","icao_code":"SKBQ","type":"large_airport","municipality":"Barranquilla","region_name":"Atlantico","latitude_deg_num":10.8896,"longitude_deg_num":-74.7808,"operaciones_total_acum":87640,"pasajeros_total_acum":2700000},
-    {"name":"Rafael Nunez","icao_code":"SKCG","type":"large_airport","municipality":"Cartagena","region_name":"Bolivar","latitude_deg_num":10.4424,"longitude_deg_num":-75.5130,"operaciones_total_acum":72100,"pasajeros_total_acum":2400000},
-    {"name":"Camilo Daza","icao_code":"SKCU","type":"large_airport","municipality":"Cucuta","region_name":"Norte de Santander","latitude_deg_num":7.9276,"longitude_deg_num":-72.5115,"operaciones_total_acum":51800,"pasajeros_total_acum":1200000},
-    {"name":"Simon Bolivar","icao_code":"SKSM","type":"large_airport","municipality":"Santa Marta","region_name":"Magdalena","latitude_deg_num":11.1196,"longitude_deg_num":-74.2306,"operaciones_total_acum":49300,"pasajeros_total_acum":1100000},
-    {"name":"Matecana","icao_code":"SKPE","type":"large_airport","municipality":"Pereira","region_name":"Risaralda","latitude_deg_num":4.8127,"longitude_deg_num":-75.7395,"operaciones_total_acum":63400,"pasajeros_total_acum":1400000},
-    {"name":"Alfonso Lopez P.","icao_code":"SKVP","type":"large_airport","municipality":"Valledupar","region_name":"Cesar","latitude_deg_num":10.4350,"longitude_deg_num":-73.2495,"operaciones_total_acum":46700,"pasajeros_total_acum":900000},
-    {"name":"Palonegro","icao_code":"SKBG","type":"large_airport","municipality":"Bucaramanga","region_name":"Santander","latitude_deg_num":7.1265,"longitude_deg_num":-73.1848,"operaciones_total_acum":58200,"pasajeros_total_acum":1300000},
-    {"name":"Olaya Herrera","icao_code":"SKMD","type":"medium_airport","municipality":"Medellin","region_name":"Antioquia","latitude_deg_num":6.2199,"longitude_deg_num":-75.5906,"operaciones_total_acum":91100,"pasajeros_total_acum":1800000},
-    {"name":"Los Garzones","icao_code":"SKMR","type":"medium_airport","municipality":"Monteria","region_name":"Cordoba","latitude_deg_num":8.8237,"longitude_deg_num":-75.8258,"operaciones_total_acum":98320,"pasajeros_total_acum":1100000},
-    {"name":"La Florida","icao_code":"SKCC","type":"medium_airport","municipality":"Cucuta","region_name":"Norte de Santander","latitude_deg_num":7.9276,"longitude_deg_num":-72.5115,"operaciones_total_acum":58900,"pasajeros_total_acum":950000},
-    {"name":"El Carano","icao_code":"SKUI","type":"medium_airport","municipality":"Quibdo","region_name":"Choco","latitude_deg_num":5.6908,"longitude_deg_num":-76.6412,"operaciones_total_acum":54200,"pasajeros_total_acum":420000},
-    {"name":"Las Brujas","icao_code":"SKCZ","type":"medium_airport","municipality":"Corozal","region_name":"Sucre","latitude_deg_num":9.3347,"longitude_deg_num":-75.2856,"operaciones_total_acum":43200,"pasajeros_total_acum":380000},
-    {"name":"Santa Ana","icao_code":"SKGO","type":"medium_airport","municipality":"Cartago","region_name":"Valle del Cauca","latitude_deg_num":4.7279,"longitude_deg_num":-75.9557,"operaciones_total_acum":41500,"pasajeros_total_acum":350000},
-    {"name":"Gustavo Rojas P.","icao_code":"SKSP","type":"medium_airport","municipality":"San Andres","region_name":"San Andres","latitude_deg_num":12.5836,"longitude_deg_num":-81.7112,"operaciones_total_acum":71500,"pasajeros_total_acum":1600000},
-    {"name":"El Alcaravan","icao_code":"SKAQ","type":"medium_airport","municipality":"Arauca","region_name":"Arauca","latitude_deg_num":7.0849,"longitude_deg_num":-70.7369,"operaciones_total_acum":28400,"pasajeros_total_acum":210000},
-    {"name":"Vanguardia","icao_code":"SKVV","type":"medium_airport","municipality":"Villavicencio","region_name":"Meta","latitude_deg_num":4.1679,"longitude_deg_num":-73.6138,"operaciones_total_acum":35100,"pasajeros_total_acum":290000},
-    {"name":"Benito Salas","icao_code":"SKNV","type":"medium_airport","municipality":"Neiva","region_name":"Huila","latitude_deg_num":2.9502,"longitude_deg_num":-75.2937,"operaciones_total_acum":32400,"pasajeros_total_acum":260000},
-    {"name":"Antonio Roldan B.","icao_code":"SKLC","type":"medium_airport","municipality":"Apartado","region_name":"Antioquia","latitude_deg_num":7.8120,"longitude_deg_num":-76.7164,"operaciones_total_acum":27600,"pasajeros_total_acum":200000},
-    {"name":"Gustavo Artunduaga","icao_code":"SKFL","type":"medium_airport","municipality":"Florencia","region_name":"Caqueta","latitude_deg_num":1.5892,"longitude_deg_num":-75.5644,"operaciones_total_acum":22800,"pasajeros_total_acum":175000},
-    {"name":"El Embrujo","icao_code":"SKPV","type":"small_airport","municipality":"Providencia","region_name":"San Andres","latitude_deg_num":13.3569,"longitude_deg_num":-81.3583,"operaciones_total_acum":8100,"pasajeros_total_acum":62000},
-    {"name":"Tres de Mayo","icao_code":"SKPS","type":"small_airport","municipality":"Puerto Asis","region_name":"Putumayo","latitude_deg_num":0.5053,"longitude_deg_num":-76.5009,"operaciones_total_acum":12300,"pasajeros_total_acum":85000},
-    {"name":"Jorge E. Gonzalez","icao_code":"SKUC","type":"small_airport","municipality":"Arauca","region_name":"Arauca","latitude_deg_num":7.0688,"longitude_deg_num":-70.7369,"operaciones_total_acum":9200,"pasajeros_total_acum":71000},
-    {"name":"Yariguies","icao_code":"SKEJ","type":"small_airport","municipality":"Barrancabermeja","region_name":"Santander","latitude_deg_num":7.0243,"longitude_deg_num":-73.8068,"operaciones_total_acum":10800,"pasajeros_total_acum":78000},
-    {"name":"Almirante Padilla","icao_code":"SKRH","type":"small_airport","municipality":"Riohacha","region_name":"La Guajira","latitude_deg_num":11.5262,"longitude_deg_num":-72.9260,"operaciones_total_acum":14500,"pasajeros_total_acum":110000},
-    {"name":"San Luis","icao_code":"SKIB","type":"small_airport","municipality":"Ibague","region_name":"Tolima","latitude_deg_num":4.4216,"longitude_deg_num":-75.1333,"operaciones_total_acum":16700,"pasajeros_total_acum":125000},
+AIRPORT_GEO = pd.DataFrame([
+    {"icao":"SKBO","name":"El Dorado",      "ciudad":"Bogota",         "lat":4.70, "lon":-74.15,"type":"large_airport", "ops":222450,"temp_c":13.2,"viento_kt":4.1,"prop_lluvia":0.031,"prop_ifr":0.038,"visib_sm":8.9,"nivel":"alto"},
+    {"icao":"SKRG","name":"J.M. Cordova",   "ciudad":"Rionegro",       "lat":6.16, "lon":-75.42,"type":"large_airport", "ops":85200, "temp_c":17.4,"viento_kt":5.8,"prop_lluvia":0.045,"prop_ifr":0.041,"visib_sm":8.1,"nivel":"alto"},
+    {"icao":"SKCL","name":"A. Bonilla",      "ciudad":"Cali",           "lat":3.54, "lon":-76.38,"type":"large_airport", "ops":82300, "temp_c":24.1,"viento_kt":6.2,"prop_lluvia":0.038,"prop_ifr":0.029,"visib_sm":8.4,"nivel":"alto"},
+    {"icao":"SKBQ","name":"E. Cortissoz",    "ciudad":"Barranquilla",   "lat":10.89,"lon":-74.78,"type":"large_airport", "ops":87640, "temp_c":27.8,"viento_kt":8.4,"prop_lluvia":0.021,"prop_ifr":0.018,"visib_sm":9.2,"nivel":"alto"},
+    {"icao":"SKCG","name":"R. Nunez",        "ciudad":"Cartagena",      "lat":10.44,"lon":-75.51,"type":"large_airport", "ops":72100, "temp_c":27.2,"viento_kt":7.9,"prop_lluvia":0.024,"prop_ifr":0.021,"visib_sm":9.0,"nivel":"alto"},
+    {"icao":"SKMD","name":"Olaya Herrera",   "ciudad":"Medellin",       "lat":6.22, "lon":-75.59,"type":"medium_airport","ops":91100, "temp_c":22.3,"viento_kt":3.8,"prop_lluvia":0.052,"prop_ifr":0.044,"visib_sm":7.8,"nivel":"alto"},
+    {"icao":"SKMR","name":"Los Garzones",    "ciudad":"Monteria",       "lat":8.82, "lon":-75.83,"type":"medium_airport","ops":98320, "temp_c":28.4,"viento_kt":5.1,"prop_lluvia":0.029,"prop_ifr":0.022,"visib_sm":8.8,"nivel":"alto"},
+    {"icao":"SKSP","name":"G. Rojas P.",     "ciudad":"San Andres",     "lat":12.58,"lon":-81.71,"type":"medium_airport","ops":71500, "temp_c":27.6,"viento_kt":9.2,"prop_lluvia":0.018,"prop_ifr":0.015,"visib_sm":9.4,"nivel":"alto"},
+    {"icao":"SKPE","name":"Matecana",         "ciudad":"Pereira",        "lat":4.81, "lon":-75.74,"type":"medium_airport","ops":63400, "temp_c":21.8,"viento_kt":4.4,"prop_lluvia":0.048,"prop_ifr":0.039,"visib_sm":7.9,"nivel":"medio"},
+    {"icao":"SKBG","name":"Palonegro",        "ciudad":"Bucaramanga",    "lat":7.13, "lon":-73.18,"type":"large_airport", "ops":58200, "temp_c":25.1,"viento_kt":6.7,"prop_lluvia":0.033,"prop_ifr":0.028,"visib_sm":8.5,"nivel":"medio"},
+    {"icao":"SKCU","name":"Camilo Daza",      "ciudad":"Cucuta",         "lat":7.93, "lon":-72.51,"type":"large_airport", "ops":51800, "temp_c":28.6,"viento_kt":5.3,"prop_lluvia":0.027,"prop_ifr":0.023,"visib_sm":8.7,"nivel":"medio"},
+    {"icao":"SKSM","name":"Simon Bolivar",    "ciudad":"Santa Marta",    "lat":11.12,"lon":-74.23,"type":"large_airport", "ops":49300, "temp_c":27.1,"viento_kt":8.1,"prop_lluvia":0.019,"prop_ifr":0.016,"visib_sm":9.3,"nivel":"medio"},
+    {"icao":"SKVP","name":"A. Lopez P.",      "ciudad":"Valledupar",     "lat":10.44,"lon":-73.25,"type":"large_airport", "ops":46700, "temp_c":29.2,"viento_kt":7.4,"prop_lluvia":0.022,"prop_ifr":0.019,"visib_sm":9.1,"nivel":"medio"},
+    {"icao":"SKUI","name":"El Carano",        "ciudad":"Quibdo",         "lat":5.69, "lon":-76.64,"type":"medium_airport","ops":54200, "temp_c":26.8,"viento_kt":2.9,"prop_lluvia":0.089,"prop_ifr":0.071,"visib_sm":6.2,"nivel":"bajo"},
+    {"icao":"SKFL","name":"G. Artunduaga",    "ciudad":"Florencia",      "lat":1.59, "lon":-75.56,"type":"medium_airport","ops":22800, "temp_c":25.4,"viento_kt":2.1,"prop_lluvia":0.071,"prop_ifr":0.058,"visib_sm":6.8,"nivel":"bajo"},
+    {"icao":"SKPS","name":"Tres de Mayo",     "ciudad":"Puerto Asis",    "lat":0.51, "lon":-76.50,"type":"small_airport", "ops":12300, "temp_c":24.9,"viento_kt":1.8,"prop_lluvia":0.078,"prop_ifr":0.062,"visib_sm":6.5,"nivel":"bajo"},
+    {"icao":"SKAQ","name":"El Alcaravan",     "ciudad":"Arauca",         "lat":7.08, "lon":-70.74,"type":"medium_airport","ops":28400, "temp_c":29.7,"viento_kt":4.8,"prop_lluvia":0.035,"prop_ifr":0.029,"visib_sm":8.3,"nivel":"bajo"},
+    {"icao":"SKNV","name":"Benito Salas",     "ciudad":"Neiva",          "lat":2.95, "lon":-75.29,"type":"medium_airport","ops":32400, "temp_c":27.3,"viento_kt":5.9,"prop_lluvia":0.041,"prop_ifr":0.034,"visib_sm":7.7,"nivel":"bajo"},
+    {"icao":"SKVV","name":"Vanguardia",       "ciudad":"Villavicencio",  "lat":4.17, "lon":-73.61,"type":"medium_airport","ops":35100, "temp_c":25.8,"viento_kt":3.7,"prop_lluvia":0.055,"prop_ifr":0.045,"visib_sm":7.4,"nivel":"bajo"},
 ])
 
-def mostrar_mapa_aeropuertos(df_pd, height=520):
-    """Mapa interactivo de aeropuertos colombianos coloreado por tipo."""
-    color_map = {
-        "large_airport":  "#E63946",
-        "medium_airport": "#F77F00",
-        "small_airport":  "#0077B6",
+# Evolucion mensual
+meses = pd.date_range("2020-01", "2025-12", freq="MS")
+np.random.seed(42)
+base  = np.linspace(9000, 15000, len(meses))
+covid = (meses >= "2020-03") & (meses <= "2020-09")
+base[covid] *= np.linspace(0.12, 0.75, covid.sum())
+ops_mensual = np.clip(base + np.random.normal(0, 280, len(meses)), 400, None)
+
+# Fenomenos por clase
+FENOMENOS = pd.DataFrame({
+    "fenomeno": ["Lluvia","Tormenta","Niebla","Baja visib.","Viento fuerte","IFR"],
+    "bajo":     [0.048, 0.009, 0.012, 0.031, 0.018, 0.041],
+    "medio":    [0.041, 0.007, 0.010, 0.025, 0.015, 0.033],
+    "alto":     [0.035, 0.005, 0.008, 0.019, 0.012, 0.026],
+})
+
+# ─────────────────────────────────────────────
+# ESTADO
+# ─────────────────────────────────────────────
+if "aeropuerto_sel" not in st.session_state:
+    st.session_state.aeropuerto_sel = None
+
+# ─────────────────────────────────────────────
+# SIDEBAR
+# ─────────────────────────────────────────────
+with st.sidebar:
+    st.markdown("""
+    <div style='padding:0.8rem 0 0.4rem 0'>
+      <div style='font-size:0.62rem;color:#94A3B8;text-transform:uppercase;
+                  letter-spacing:0.1em;margin-bottom:0.3rem'>SI7007 · EAFIT · 2026</div>
+      <div style='font-size:1rem;font-weight:700;color:#0F172A;line-height:1.3'>
+        Operacion Aeroportuaria<br>Colombia
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    st.markdown("""
+    <div style='font-size:0.7rem;color:#0EA5E9;text-transform:uppercase;
+                letter-spacing:0.08em;margin-bottom:0.4rem;font-weight:600'>
+      Pregunta central
+    </div>
+    <div style='font-size:0.82rem;color:#475569;line-height:1.5'>
+      ¿Las condiciones meteorologicas de un aeropuerto colombiano
+      permiten anticipar su nivel de operacion el proximo mes?
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    # Filtro color del mapa
+    color_mapa = st.radio(
+        "Color del mapa por",
+        options=["Tipo de aeropuerto", "Nivel de operacion"],
+        index=0,
+    )
+
+    nivel_sel = st.multiselect(
+        "Nivel de operacion",
+        options=["bajo","medio","alto"],
+        default=["bajo","medio","alto"],
+    )
+
+    sel_nombre = st.selectbox(
+        "Ver detalle de aeropuerto",
+        ["Ninguno"] + sorted(AIRPORT_GEO["name"].tolist()),
+    )
+    st.session_state.aeropuerto_sel = sel_nombre if sel_nombre != "Ninguno" else None
+
+    st.markdown("---")
+
+    # Card aeropuerto
+    if st.session_state.aeropuerto_sel:
+        row = AIRPORT_GEO[AIRPORT_GEO["name"] == st.session_state.aeropuerto_sel].iloc[0]
+        badge_bg    = {"bajo":"#FEF3C7","medio":"#E0F2FE","alto":"#D1FAE5"}[row["nivel"]]
+        badge_color = {"bajo":"#92400E","medio":"#075985","alto":"#065F46"}[row["nivel"]]
+        st.markdown(f"""
+        <div class="airport-card">
+          <div class="airport-card-icao">{row["icao"]}</div>
+          <div class="airport-card-title">{row["name"]}</div>
+          <div style="font-size:0.75rem;color:#64748B;margin-bottom:0.5rem">{row["ciudad"]}</div>
+          <span style="background:{badge_bg};color:{badge_color};padding:2px 10px;
+                       border-radius:99px;font-size:0.72rem;font-weight:700">
+            Nivel {row["nivel"]}
+          </span>
+          <div style="margin-top:0.7rem">
+            <div class="airport-stat">
+              <span class="airport-stat-label">Ops. acumuladas</span>
+              <span class="airport-stat-value">{int(row["ops"]):,}</span>
+            </div>
+            <div class="airport-stat">
+              <span class="airport-stat-label">Prop. lluvia</span>
+              <span class="airport-stat-value">{row["prop_lluvia"]:.1%}</span>
+            </div>
+            <div class="airport-stat">
+              <span class="airport-stat-label">Prop. IFR</span>
+              <span class="airport-stat-value">{row["prop_ifr"]:.1%}</span>
+            </div>
+            <div class="airport-stat">
+              <span class="airport-stat-label">Viento medio</span>
+              <span class="airport-stat-value">{row["viento_kt"]:.1f} kt</span>
+            </div>
+            <div class="airport-stat">
+              <span class="airport-stat-label">Visibilidad</span>
+              <span class="airport-stat-value">{row["visib_sm"]:.1f} sm</span>
+            </div>
+            <div class="airport-stat" style="border:none">
+              <span class="airport-stat-label">Temperatura</span>
+              <span class="airport-stat-value">{row["temp_c"]:.1f} °C</span>
+            </div>
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown("""
+        <div style='font-size:0.78rem;color:#94A3B8;text-align:center;
+                    padding:1rem;border:1px dashed #E2E8F0;border-radius:10px'>
+          Selecciona un aeropuerto para ver su perfil meteorologico
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("---")
+    st.markdown(f"""
+    <div style='font-size:0.7rem;color:#94A3B8;line-height:2'>
+      Modelo: <b style='color:#0EA5E9'>LightGBM</b><br>
+      Accuracy: <b style='color:#10B981'>{accuracy:.1%}</b><br>
+      Macro F1: <b style='color:#10B981'>{macro_f1:.1%}</b>
+    </div>
+    """, unsafe_allow_html=True)
+
+# ─────────────────────────────────────────────
+# MAPA HERO — estilo carto-positron
+# ─────────────────────────────────────────────
+df_mapa = AIRPORT_GEO[AIRPORT_GEO["nivel"].isin(nivel_sel)].copy() if nivel_sel else AIRPORT_GEO.copy()
+
+if color_mapa == "Tipo de aeropuerto":
+    color_map_disc = {
+        "large_airport":  COLOR_LARGE,
+        "medium_airport": COLOR_MEDIUM,
+        "small_airport":  COLOR_SMALL,
     }
-    label_map = {
+    label_map_disc = {
         "large_airport":  "Hub principal",
         "medium_airport": "Regional",
         "small_airport":  "Local",
     }
-    df_pd = df_pd.copy()
-    df_pd["tipo_label"] = df_pd["type"].map(label_map).fillna(df_pd["type"])
-    df_pd["color"]      = df_pd["type"].map(color_map).fillna("#94A3B8")
+    grupos = [
+        ("large_airport",  "Hub principal", COLOR_LARGE),
+        ("medium_airport", "Regional",      COLOR_MEDIUM),
+        ("small_airport",  "Local",         COLOR_SMALL),
+    ]
+    col_campo = "type"
+else:
+    color_map_disc = {
+        "bajo":  COLOR_BAJO,
+        "medio": COLOR_MEDIO,
+        "alto":  COLOR_ALTO,
+    }
+    label_map_disc = {
+        "bajo":  "Nivel bajo",
+        "medio": "Nivel medio",
+        "alto":  "Nivel alto",
+    }
+    grupos = [
+        ("bajo",  "Nivel bajo",  COLOR_BAJO),
+        ("medio", "Nivel medio", COLOR_MEDIO),
+        ("alto",  "Nivel alto",  COLOR_ALTO),
+    ]
+    col_campo = "nivel"
 
-    fig = go.Figure()
-    for tipo, label, color in [
-        ("large_airport",  "Hub principal", "#E63946"),
-        ("medium_airport", "Regional",      "#F77F00"),
-        ("small_airport",  "Local",         "#0077B6"),
-    ]:
-        sub = df_pd[df_pd["type"] == tipo]
-        if sub.empty:
-            continue
-        fig.add_trace(go.Scattergeo(
-            lat=sub["latitude_deg_num"],
-            lon=sub["longitude_deg_num"],
-            mode="markers",
-            name=label,
-            marker=dict(
-                size=sub["operaciones_total_acum"].apply(lambda x: max(8, min(22, x / 10000 + 8))),
-                color=color,
-                opacity=0.85,
-                line=dict(width=1, color="white"),
-            ),
-            text=sub["name"],
-            customdata=sub[["icao_code","municipality","region_name","operaciones_total_acum","pasajeros_total_acum"]].values,
-            hovertemplate=(
-                "<b>%{text}</b> (%{customdata[0]})<br>"
-                "Municipio: %{customdata[1]}<br>"
-                "Region: %{customdata[2]}<br>"
-                "Operaciones acum.: %{customdata[3]:,}<br>"
-                "Pasajeros acum.: %{customdata[4]:,}<extra></extra>"
-            ),
-        ))
+fig_mapa = go.Figure()
 
-    fig.update_layout(
-        height=height,
-        margin=dict(l=0, r=0, t=10, b=0),
-        paper_bgcolor="white",
-        geo=dict(
-            scope="south america",
-            center=dict(lat=4.5709, lon=-74.2973),
-            projection_scale=6,
-            showland=True,
-            landcolor="#F1F5F9",
-            showocean=True,
-            oceancolor="#DBEAFE",
-            showcountries=True,
-            countrycolor="#CBD5E1",
-            showcoastlines=True,
-            coastlinecolor="#94A3B8",
-            showrivers=False,
-            showlakes=False,
-            bgcolor="white",
+for key, label, color in grupos:
+    sub = df_mapa[df_mapa[col_campo] == key]
+    if sub.empty:
+        continue
+    # Resaltar seleccionado
+    sizes = sub["ops"].apply(lambda x: max(10, min(24, x/7500 + 9)))
+    line_widths = [3 if row["name"] == st.session_state.aeropuerto_sel else 1 for _, row in sub.iterrows()]
+    line_colors = ["white" if row["name"] == st.session_state.aeropuerto_sel else "rgba(255,255,255,0.6)" for _, row in sub.iterrows()]
+
+    fig_mapa.add_trace(go.Scattermapbox(
+        lat=sub["lat"],
+        lon=sub["lon"],
+        mode="markers",
+        name=label,
+        marker=dict(
+            size=sizes,
+            color=color,
+            opacity=0.92,
         ),
-        legend=dict(
-            orientation="h",
-            y=-0.05,
-            x=0.5,
-            xanchor="center",
-            bgcolor="rgba(255,255,255,0.9)",
-            bordercolor="#E2E8F0",
-            borderwidth=1,
-            font=dict(family="Space Grotesk", size=12),
+        text=sub["name"],
+        customdata=sub[["icao","ciudad","ops","prop_lluvia","viento_kt","nivel","type"]].values,
+        hovertemplate=(
+            "<b>%{text}</b> (%{customdata[0]})<br>"
+            "%{customdata[1]}<br>"
+            "──────────────────<br>"
+            "Nivel predominante: <b>%{customdata[5]}</b><br>"
+            "Tipo: %{customdata[6]}<br>"
+            "Operaciones acum.: <b>%{customdata[2]:,}</b><br>"
+            "Prop. lluvia: <b>%{customdata[3]:.1%}</b><br>"
+            "Viento medio: <b>%{customdata[4]:.1f} kt</b>"
+            "<extra></extra>"
         ),
-        font=dict(family="Space Grotesk"),
-    )
-    return fig
+    ))
 
+fig_mapa.update_layout(
+    height=580,
+    margin=dict(l=0, r=0, t=0, b=0),
+    paper_bgcolor="white",
+    mapbox=dict(
+        style="carto-positron",
+        center=dict(lat=4.5709, lon=-74.2973),
+        zoom=5.0,
+    ),
+    legend=dict(
+        orientation="h",
+        y=0.02, x=0.5, xanchor="center",
+        bgcolor="rgba(255,255,255,0.92)",
+        bordercolor="#E2E8F0",
+        borderwidth=1,
+        font=dict(family="Inter", size=12, color="#1E293B"),
+    ),
+    font=dict(family="Inter"),
+)
 
-# ─────────────────────────────────────────────
-# SIDEBAR — FILTROS GLOBALES
-# ─────────────────────────────────────────────
-with st.sidebar:
-    st.markdown("## Filtros")
-    st.markdown("---")
-    
-    # Tab 2 — El Modelo
-    st.markdown("### El Modelo")
-
-    modelos_disponibles = sorted(df_val["model_name"].unique().tolist())
-    modelos_sel = st.multiselect(
-        "Modelos a comparar",
-        options=modelos_disponibles,
-        default=modelos_disponibles,
-    )
-
-    configs_disponibles = sorted(df_val["dataset_config"].unique().tolist())
-    config_sel = st.selectbox(
-        "Configuracion de dataset",
-        options=["Todas"] + configs_disponibles,
-        index=0,
-    )
-
-    st.markdown("---")
-
-    # Tab 3 — Los Hallazgos
-    st.markdown("### Los Hallazgos")
-
-    clases_sel = st.multiselect(
-        "Clases de fenomenos meteorologicos",
-        options=["bajo", "medio", "alto"],
-        default=["bajo", "medio", "alto"],
-    )
-
-    st.markdown("---")
-    st.markdown(
-        "<div style='font-size:0.72rem;color:#475569;text-align:center'>"
-        "SI7007 · EAFIT · 2026<br>Modelo: LightGBM (M03)</div>",
-        unsafe_allow_html=True,
-    )
+st.plotly_chart(fig_mapa, use_container_width=True, config={"displayModeBar": False})
 
 # ─────────────────────────────────────────────
-# HERO
+# TABS DE ANALISIS
 # ─────────────────────────────────────────────
-st.markdown(f"""
-<div class="hero">
-  <div class="hero-title">Clasificacion del Nivel de Operacion Aeroportuaria en Colombia</div>
-  <div class="hero-sub">
-    Dashboard analitico · SI7007 Visualizacion de Datos ·
-    Modelo final: <strong>{model_name}</strong> · Test sobre {n_eval} registros
-  </div>
-</div>
-""", unsafe_allow_html=True)
-
-# ─────────────────────────────────────────────
-# TABS
-# ─────────────────────────────────────────────
-tab1, tab2, tab3, tab4 = st.tabs(["El Problema", "EDA", "Modelo", "Hallazgos"])
-
+tab1, tab2, tab3 = st.tabs([
+    "Meteorologia y Operacion",
+    "Variables del modelo",
+    "Comparativa de modelos",
+])
 
 # ══════════════════════════════════════════════
-# TAB 1 — EL PROBLEMA
+# TAB 1 — METEOROLOGIA Y OPERACION
 # ══════════════════════════════════════════════
 with tab1:
 
-    # ── Mapa geografico ────────────────────────
-    st.markdown('<div class="section-header">Distribucion geografica de aeropuertos en Colombia</div>', unsafe_allow_html=True)
-    st.markdown('<div class="section-sub">46 aeropuertos en el dataset · tamano del punto proporcional a operaciones acumuladas · coloreado por tipo</div>', unsafe_allow_html=True)
+    col_var, col_fen = st.columns([1, 1], gap="large")
 
-    fig_mapa = mostrar_mapa_aeropuertos(AIRPORT_GEO_DATA, height=500)
-    st.plotly_chart(fig_mapa, use_container_width=True)
+    with col_var:
+        st.markdown('<div class="section-q">¿Los aeropuertos con peor clima operan menos?</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-sub">Valor promedio de la variable meteorologica segun nivel de operacion del mes siguiente</div>', unsafe_allow_html=True)
 
-    st.markdown("""
-    <div class="insight-box">
-      Los <strong>hubs principales</strong> (rojo) concentran la mayoria del trafico y se ubican
-      en las ciudades mas pobladas. Los aeropuertos <strong>regionales</strong> (naranja) cubren
-      capitales de departamento, mientras que los <strong>locales</strong> (azul) dan conectividad
-      a zonas de dificil acceso como Choco, Putumayo y la Guajira.
-    </div>
-    """, unsafe_allow_html=True)
-
-    st.markdown('<hr class="divider">', unsafe_allow_html=True)
-
-    # ── KPIs superiores ───────────────────────
-    st.markdown('<div class="section-header">Problema de negocio</div>', unsafe_allow_html=True)
-    st.markdown('<div class="section-sub">La necesidad de clasificar anticipadamente el nivel de operacion aerea mensual de los aeropuertos en Colombia, de tal forma que sea posible identificar si el siguiente mes presentara un comportamiento bajo, medio o alto en terminos operacionales.</div>', unsafe_allow_html=True)
-
-    c1, c2, c3, c4, c5, c6 = st.columns(6)
-    kpis_top = [
-        (c1, f"{accuracy:.1%}",   "Accuracy (test)",    "LightGBM final", AZUL_CLARO),
-        (c2, f"{macro_f1:.1%}",   "Macro F1 (test)",    "Metrica principal", VERDE),
-        (c3, f"{bal_acc:.1%}",    "Balanced Acc.",      "Sin sesgo de clase", CYAN),
-        (c4, "46",                "Aeropuertos",         "con datos completos", "#64748B"),
-        (c5, "3.254",             "Registros modelo",   "aeropuerto-mes", "#64748B"),
-        (c6, "38",                "Variables",           "features finales", "#64748B"),
-    ]
-    for col, val, lbl, sub, color in kpis_top:
-        with col:
-            st.markdown(f"""<div class="kpi-card" style="border-top:3px solid {color}">
-              <div class="kpi-value" style="color:{color}">{val}</div>
-              <div class="kpi-label">{lbl}</div>
-              <div class="kpi-sub">{sub}</div>
-            </div>""", unsafe_allow_html=True)
-
-    st.markdown('<hr class="divider">', unsafe_allow_html=True)
-
-
-
-    # ── Pregunta de oro + pipeline ─────────────
-    col_left, col_right = st.columns([1, 1], gap="large")
-
-    with col_left:
-        st.markdown('<div class="section-header">Pregunta de oro</div>', unsafe_allow_html=True)
-        st.markdown('<div class="section-sub">El reto de negocio que impulsa este proyecto</div>', unsafe_allow_html=True)
-        st.markdown("""
-        <div class="insight-box">
-          <strong>Es posible predecir con un mes de anticipacion si un aeropuerto colombiano
-          tendra nivel de operacion bajo, medio o alto?</strong><br><br>
-          Anticipar el nivel operativo permite a aerolineas y autoridades planificar
-          recursos humanos, logisticos e infraestructura antes de que el mes ocurra.
-        </div>
-        <div class="insight-box" style="border-left-color:#10B981;background:linear-gradient(135deg,#F0FDF4,#ECFDF5)">
-          <strong>Respuesta:</strong> Si. LightGBM logra <strong>86.8% de accuracy</strong>
-          y <strong>Macro F1 de 86.8%</strong> en datos nunca vistos, superando todos
-          los baselines por mas de <strong>20 puntos porcentuales</strong>.
-        </div>
-        """, unsafe_allow_html=True)
-
-    with col_right:
-        st.markdown('<div class="section-header">Volumen por capa del pipeline</div>', unsafe_allow_html=True)
-        st.markdown('<div class="section-sub">Registros procesados en cada zona del data lake (Databricks)</div>', unsafe_allow_html=True)
-        df_pipe = pd.DataFrame({
-            "Capa": ["Bronze (raw)", "Silver (limpio)", "Gold (modelo)"],
-            "Registros": [
-                resumen["filas_operaciones_bronze"] + resumen["filas_trafico_od_bronze"],
-                resumen["filas_silver_iem"],
-                resumen["filas_dataset_modelo"],
-            ],
-        })
-        fig_pipe = go.Figure(go.Bar(
-            y=df_pipe["Capa"], x=df_pipe["Registros"], orientation="h",
-            marker_color=[ROJO, AMARILLO, VERDE],
-            text=[f'{v:,.0f}' for v in df_pipe["Registros"]],
-            textposition="outside",
-        ))
-        fig_pipe.update_layout(
-            height=200, margin=dict(l=0, r=80, t=10, b=10),
-            paper_bgcolor="white", plot_bgcolor="white",
-            xaxis=dict(title="Numero de registros", showgrid=False, showticklabels=False, zeroline=False),
-            yaxis=dict(title="Capa del pipeline", tickfont=dict(size=12), autorange="reversed"),
-            font=dict(family="Space Grotesk"),
-        )
-        st.plotly_chart(fig_pipe, use_container_width=True)
-
-    st.markdown('<hr class="divider">', unsafe_allow_html=True)
-
-    # ── Evolucion temporal ─────────────────────
-    st.markdown('<div class="section-header">Evolucion mensual de operaciones (2020-2025)</div>', unsafe_allow_html=True)
-    st.markdown('<div class="section-sub">El sistema colapso en la pandemia y se recupero superando niveles historicos</div>', unsafe_allow_html=True)
-
-    fig_evol = go.Figure()
-    fig_evol.add_vrect(
-        x0="2020-03-01", x1="2020-09-01",
-        fillcolor=ROJO, opacity=0.08, line_width=0,
-        annotation_text="Restricciones COVID-19",
-        annotation_position="top left",
-        annotation_font=dict(color=ROJO, size=11),
-    )
-    fig_evol.add_trace(go.Scatter(
-        x=meses, y=ops_mensual,
-        fill="tozeroy", fillcolor="rgba(37,99,235,0.07)",
-        line=dict(color=AZUL_CLARO, width=2.5),
-        hovertemplate="%{x|%b %Y}: %{y:,.0f} ops<extra></extra>",
-    ))
-    min_idx = int(np.argmin(ops_mensual))
-    fig_evol.add_annotation(
-        x=meses[min_idx], y=ops_mensual[min_idx],
-        text=f"Minimo COVID<br>{ops_mensual[min_idx]:,.0f} ops",
-        showarrow=True, arrowhead=2, arrowcolor=ROJO,
-        font=dict(color=ROJO, size=11), ay=-50, ax=40,
-    )
-    fig_evol.update_layout(
-        height=280, margin=dict(l=0, r=20, t=20, b=20),
-        paper_bgcolor="white", plot_bgcolor="white",
-        xaxis=dict(title="Mes", showgrid=False, zeroline=False),
-        yaxis=dict(title="Operaciones totales", showgrid=True, gridcolor="#F1F5F9", zeroline=False),
-        font=dict(family="Space Grotesk"),
-        showlegend=False,
-    )
-    st.plotly_chart(fig_evol, use_container_width=True)
-
-    st.markdown('<hr class="divider">', unsafe_allow_html=True)
-
-    # ── Top N aeropuertos (filtro sidebar) + donut
-    col_top, col_dist = st.columns([1.2, 0.8], gap="large")
-
-    with col_top:
-        st.markdown('<div class="section-header">Top 15 aeropuertos por operaciones acumuladas</div>', unsafe_allow_html=True)
-        st.markdown('<div class="section-sub">2020-2025 · Bogota concentra el 22% del total del sistema</div>', unsafe_allow_html=True)
-
-        df_top_full = pd.DataFrame(TOP15_DATA)
-        df_top_filt = df_top_full.head(15).sort_values("operaciones")
-        colors_top  = [AZUL_CLARO if "SKBO" in l else "#93C5FD" for l in df_top_filt["label"]]
-
-        fig_top = go.Figure(go.Bar(
-            x=df_top_filt["operaciones"], y=df_top_filt["label"], orientation="h",
-            marker_color=colors_top,
-            text=[f'{v:,.0f}' for v in df_top_filt["operaciones"]],
-            textposition="outside",
-            hovertemplate="<b>%{y}</b><br>Operaciones acumuladas: %{x:,.0f}<extra></extra>",
-        ))
-        fig_top.update_layout(
-            height=460,
-            margin=dict(l=0, r=90, t=10, b=10),
-            paper_bgcolor="white", plot_bgcolor="white",
-            xaxis=dict(title="Operaciones acumuladas 2020-2025", showgrid=True, gridcolor="#F1F5F9", zeroline=False, showticklabels=False),
-            yaxis=dict(title="Aeropuerto (codigo ICAO)", tickfont=dict(size=10)),
-            font=dict(family="Space Grotesk"),
-        )
-        st.plotly_chart(fig_top, use_container_width=True)
-
-    with col_dist:
-        st.markdown('<div class="section-header">Balance de clases del target</div>', unsafe_allow_html=True)
-        st.markdown('<div class="section-sub">Distribucion en el conjunto de prueba (363 registros)</div>', unsafe_allow_html=True)
-
-        conf = meta["confusion_matrix_test_final"]
-        bajo_n  = sum(conf["0"].values())
-        medio_n = sum(conf["1"].values())
-        alto_n  = sum(conf["2"].values())
-        total   = bajo_n + medio_n + alto_n
-
-        fig_donut = go.Figure(go.Pie(
-            labels=["Bajo", "Medio", "Alto"],
-            values=[bajo_n, medio_n, alto_n],
-            hole=0.55,
-            marker_colors=[COLOR_BAJO, COLOR_MEDIO, COLOR_ALTO],
-            textinfo="label+percent",
-            textfont=dict(size=13),
-            hovertemplate="<b>%{label}</b><br>%{value} registros (%{percent})<extra></extra>",
-        ))
-        fig_donut.add_annotation(
-            text=f"<b>{total}</b><br>registros",
-            x=0.5, y=0.5, showarrow=False,
-            font=dict(size=15, color=AZUL_OSCURO),
-        )
-        fig_donut.update_layout(
-            height=300, margin=dict(l=0, r=0, t=10, b=10),
-            paper_bgcolor="white",
-            legend=dict(orientation="h", y=-0.1, x=0.5, xanchor="center"),
-            font=dict(family="Space Grotesk"),
-        )
-        st.plotly_chart(fig_donut, use_container_width=True)
-
-        st.markdown("""
-        <div class="insight-box">
-          Clases <strong>balanceadas</strong> (27% bajo, 34% medio, 39% alto).
-          El Macro F1 es representativo y no esta inflado por ninguna clase dominante.
-        </div>
-        """, unsafe_allow_html=True)
-
-
-# ══════════════════════════════════════════════
-# TAB 3 — EL MODELO
-# ══════════════════════════════════════════════
-with tab3:
-
-    # Aplicar filtros del sidebar
-    df_base = df_val[~df_val["experiment_id"].str.contains("hp|optuna", case=False)].copy()
-    if modelos_sel:
-        df_base = df_base[df_base["model_name"].isin(modelos_sel)]
-    if config_sel != "Todas":
-        df_base = df_base[df_base["dataset_config"] == config_sel]
-
-    # ── KPIs superiores del modelo final ──────
-    st.markdown('<div class="section-header">Resultado del modelo final en test</div>', unsafe_allow_html=True)
-    st.markdown('<div class="section-sub">LightGBM (M03) · 363 muestras nunca vistas · tuning con Optuna · configuracion corr_060_070</div>', unsafe_allow_html=True)
-
-    km1, km2, km3, km4, km5, km6 = st.columns(6)
-    kpis_modelo = [
-        (km1, f"{accuracy:.1%}",           "Accuracy",          AZUL_CLARO),
-        (km2, f"{macro_f1:.1%}",           "Macro F1",          VERDE),
-        (km3, f"{bal_acc:.1%}",            "Balanced Acc.",     CYAN),
-        (km4, f"{m_test['f1_bajo']:.1%}",  "F1 Clase Bajo",     COLOR_BAJO),
-        (km5, f"{m_test['f1_medio']:.1%}", "F1 Clase Medio",    COLOR_MEDIO),
-        (km6, f"{m_test['f1_alto']:.1%}",  "F1 Clase Alto",     COLOR_ALTO),
-    ]
-    for col, val, lbl, color in kpis_modelo:
-        with col:
-            st.markdown(f"""<div class="kpi-card" style="border-top:3px solid {color}">
-              <div class="kpi-value" style="color:{color};font-size:1.6rem">{val}</div>
-              <div class="kpi-label">{lbl}</div>
-            </div>""", unsafe_allow_html=True)
-
-    st.markdown('<hr class="divider">', unsafe_allow_html=True)
-
-    # ── Comparativa de modelos (filtrada) ──────
-    col_comp_title, _ = st.columns([3, 1])
-    with col_comp_title:
-        n_exp = len(df_base)
-        st.markdown(f'<div class="section-header">Comparativa de modelos ({n_exp} experimentos seleccionados)</div>', unsafe_allow_html=True)
-        st.markdown('<div class="section-sub">Macro F1 en validacion · usa los filtros del panel izquierdo para comparar modelos y configuraciones</div>', unsafe_allow_html=True)
-
-    if df_base.empty:
-        st.warning("No hay experimentos con los filtros seleccionados.")
-    else:
-        df_base_sorted = df_base.sort_values("macro_f1", ascending=True)
-        colors_bar = [AZUL_CLARO if r["model_name"] == "LightGBM" else "#CBD5E1"
-                      for _, r in df_base_sorted.iterrows()]
-
-        fig_comp = go.Figure(go.Bar(
-            x=df_base_sorted["macro_f1"],
-            y=df_base_sorted["experiment_id"].str.replace("_corr_060_0", " | corr.0.", regex=False),
-            orientation="h",
-            marker_color=colors_bar,
-            text=[f'{v:.1%}' for v in df_base_sorted["macro_f1"]],
-            textposition="outside",
-            hovertemplate="<b>%{y}</b><br>Macro F1: %{x:.3f}<extra></extra>",
-        ))
-        fig_comp.add_vline(x=0.85, line_dash="dot", line_color=AZUL_CLARO,
-                           annotation_text=" Umbral 85%",
-                           annotation_font=dict(size=11, color=AZUL_CLARO))
-        fig_comp.update_layout(
-            height=max(300, len(df_base_sorted) * 28),
-            margin=dict(l=0, r=80, t=10, b=10),
-            paper_bgcolor="white", plot_bgcolor="white",
-            xaxis=dict(title="Macro F1", tickformat=".0%", range=[0.55, 0.97],
-                       showgrid=True, gridcolor="#F1F5F9", zeroline=False),
-            yaxis=dict(title="Experimento", tickfont=dict(size=10, family="DM Mono")),
-            font=dict(family="Space Grotesk"),
-        )
-        st.plotly_chart(fig_comp, use_container_width=True)
-
-        st.markdown("""
-        <div class="insight-box">
-          <strong>Regresion Logistica (B01)</strong> alcanza ~65% de Macro F1,
-          mas de 20 puntos por debajo de LightGBM. El problema tiene
-          <strong>no-linearidades importantes</strong> que los arboles capturan mejor.
-        </div>
-        """, unsafe_allow_html=True)
-
-    st.markdown('<hr class="divider">', unsafe_allow_html=True)
-
-    # ── Detalle metricas por modelo (filtrado) + Matriz
-    col_det, col_mat = st.columns([1, 1], gap="large")
-
-    with col_det:
-        st.markdown('<div class="section-header">Metricas por modelo (validacion)</div>', unsafe_allow_html=True)
-        st.markdown('<div class="section-sub">Accuracy, Macro F1 y Balanced Accuracy segun filtros activos</div>', unsafe_allow_html=True)
-
-        if not df_base.empty:
-            df_agg = (df_base.groupby("model_name")[["accuracy","macro_f1","balanced_accuracy"]]
-                      .mean().reset_index().sort_values("macro_f1", ascending=False))
-
-            fig_det = go.Figure()
-            for metrica, color, nombre in [
-                ("macro_f1",           VERDE,      "Macro F1"),
-                ("accuracy",           AZUL_CLARO, "Accuracy"),
-                ("balanced_accuracy",  CYAN,       "Balanced Acc."),
-            ]:
-                fig_det.add_trace(go.Bar(
-                    name=nombre,
-                    x=df_agg["model_name"],
-                    y=df_agg[metrica],
-                    marker_color=color,
-                    hovertemplate=f"<b>%{{x}}</b><br>{nombre}: %{{y:.3f}}<extra></extra>",
-                ))
-            fig_det.update_layout(
-                barmode="group", height=320,
-                margin=dict(l=0, r=0, t=10, b=10),
-                paper_bgcolor="white", plot_bgcolor="white",
-                xaxis=dict(title="Modelo", tickfont=dict(size=11)),
-                yaxis=dict(title="Valor de la metrica", tickformat=".0%",
-                           range=[0.55, 0.97], showgrid=True, gridcolor="#F1F5F9"),
-                legend=dict(orientation="h", y=1.08, x=0.5, xanchor="center"),
-                font=dict(family="Space Grotesk"),
-            )
-            st.plotly_chart(fig_det, use_container_width=True)
-
-    with col_mat:
-        st.markdown('<div class="section-header">Matriz de confusion (modelo final)</div>', unsafe_allow_html=True)
-        st.markdown('<div class="section-sub">Clase real (filas) vs clase predicha (columnas) · LightGBM test</div>', unsafe_allow_html=True)
-
-        orden = ["bajo", "medio", "alto"]
-        mat_np = np.array([
-            [meta["confusion_matrix_test_final"][r][c] for c in ["0","1","2"]]
-            for r in ["0","1","2"]
-        ], dtype=float)
-        mat_norm = mat_np / mat_np.sum(axis=1, keepdims=True)
-        text_vals = [
-            [f"<b>{int(mat_np[i][j])}</b><br>{mat_norm[i][j]:.0%}"
-             for j in range(3)] for i in range(3)
-        ]
-        fig_mat = go.Figure(go.Heatmap(
-            z=mat_norm,
-            x=[c.capitalize() for c in orden],
-            y=[c.capitalize() for c in orden],
-            colorscale=[[0,"#EFF6FF"],[0.5,"#93C5FD"],[1,"#1D4ED8"]],
-            showscale=False,
-            text=text_vals, texttemplate="%{text}",
-            hovertemplate="Real: %{y}<br>Predicho: %{x}<br>Proporcion: %{z:.1%}<extra></extra>",
-        ))
-        fig_mat.update_layout(
-            height=320, margin=dict(l=0, r=0, t=20, b=40),
-            paper_bgcolor="white", plot_bgcolor="white",
-            xaxis=dict(title="Clase predicha", tickfont=dict(size=13)),
-            yaxis=dict(title="Clase real", tickfont=dict(size=13), autorange="reversed"),
-            font=dict(family="Space Grotesk"),
-        )
-        st.plotly_chart(fig_mat, use_container_width=True)
-
-        st.markdown("""
-        <div class="insight-box">
-          La diagonal domina. Los errores son <strong>confusiones entre clases adyacentes</strong>.
-          El modelo <strong>nunca confunde los extremos</strong>: bajo-alto = 0 errores.
-        </div>
-        """, unsafe_allow_html=True)
-
-    st.markdown('<hr class="divider">', unsafe_allow_html=True)
-
-    # ── CV + Target por año ────────────────────
-    col_cv, col_ta = st.columns([1, 1], gap="large")
-
-    with col_cv:
-        st.markdown('<div class="section-header">Estabilidad temporal (CV)</div>', unsafe_allow_html=True)
-        st.markdown('<div class="section-sub">Macro F1 mean +/- std en 5 folds temporales</div>', unsafe_allow_html=True)
-
-        fig_cv_plot = go.Figure()
-        for _, row in df_cv.iterrows():
-            is_winner = row["model_id"] == "M03" and "070" in row["dataset_config"]
-            fig_cv_plot.add_trace(go.Bar(
-                name=row["model_name"],
-                x=[row["model_name"]],
-                y=[row["macro_f1_mean"]],
-                marker_color=AZUL_CLARO if is_winner else "#CBD5E1",
-                text=[f'{row["macro_f1_mean"]:.1%}'],
-                textposition="outside",
-                textfont=dict(size=11, family="Space Grotesk"),
-                hovertemplate=(
-                    f"<b>{row['model_name']}</b><br>"
-                    f"Macro F1: {row['macro_f1_mean']:.3f}<br>"
-                    f"Std: ±{row['macro_f1_std']:.3f}<extra></extra>"
-                ),
-            ))
-        fig_cv_plot.update_layout(
-            height=320,
-            showlegend=False,
-            margin=dict(l=0, r=0, t=30, b=10),
-            paper_bgcolor="white",
-            plot_bgcolor="white",
-            xaxis=dict(title="Modelo", tickfont=dict(size=11)),
-            yaxis=dict(title="Macro F1", tickformat=".0%", range=[0.86, 0.91],
-                    showgrid=False, zeroline=False),
-            font=dict(family="Space Grotesk"),
-        )
-        st.plotly_chart(fig_cv_plot, use_container_width=True)
-
-    with col_ta:
-        st.markdown('<div class="section-header">Balance de clases por año</div>', unsafe_allow_html=True)
-        st.markdown('<div class="section-sub">El COVID desbalanceo 2020 · desde 2021 el sistema se estabilizo</div>', unsafe_allow_html=True)
-
-        df_ta     = pd.DataFrame(TARGET_ANIO)
-        totales   = df_ta.groupby("anio")["n"].transform("sum")
-        df_ta_pct = df_ta.copy()
-        df_ta_pct["pct"] = df_ta["n"] / totales * 100
-
-        fig_ta = go.Figure()
-        for nivel, color, dash in [
-            ("bajo",  COLOR_BAJO,  "dot"),
-            ("medio", COLOR_MEDIO, "dash"),
-            ("alto",  COLOR_ALTO,  "solid"),
-        ]:
-            sub = df_ta_pct[df_ta_pct["nivel"] == nivel]
-            fig_ta.add_trace(go.Scatter(
-                name=nivel.capitalize(),
-                x=sub["anio"].astype(str), y=sub["pct"],
-                mode="lines+markers",
-                line=dict(color=color, width=3, dash=dash),
-                marker=dict(size=9, color=color, line=dict(width=2, color="white")),
-                hovertemplate=f"<b>{nivel.capitalize()}</b><br>Año: %{{x}}<br>%{{y:.1f}}%<extra></extra>",
-            ))
-        fig_ta.update_layout(
-            height=300, margin=dict(l=0, r=20, t=10, b=10),
-            paper_bgcolor="white", plot_bgcolor="white",
-            xaxis=dict(title="Año", showgrid=False),
-            yaxis=dict(title="Proporcion de registros (%)", ticksuffix="%",
-                       showgrid=True, gridcolor="#F1F5F9", range=[0, 55], zeroline=False),
-            legend=dict(orientation="h", y=1.12, x=0.5, xanchor="center"),
-            font=dict(family="Space Grotesk"),
-        )
-        st.plotly_chart(fig_ta, use_container_width=True)
-
-
-# ══════════════════════════════════════════════
-# TAB 4 — LOS HALLAZGOS
-# ══════════════════════════════════════════════
-with tab4:
-
-    # ── KPIs de error superiores ───────────────
-    st.markdown('<div class="section-header">Resumen de desempeno en test</div>', unsafe_allow_html=True)
-    st.markdown('<div class="section-sub">Aciertos y errores del modelo final sobre 363 muestras nunca vistas</div>', unsafe_allow_html=True)
-
-    aciertos_n   = int(df_err[df_err["tipo_error"] == "acierto"]["n"].values[0])
-    aciertos_pct = float(df_err[df_err["tipo_error"] == "acierto"]["pct"].values[0])
-    errores_n    = n_eval - aciertos_n
-    errores_pct  = 100 - aciertos_pct
-
-    ke1, ke2, ke3, ke4 = st.columns(4)
-    for col, val, lbl, sub, color in [
-        (ke1, f"{aciertos_n}",    "Predicciones correctas", f"{aciertos_pct:.1f}% del total", VERDE),
-        (ke2, f"{errores_n}",     "Predicciones erroneas",  f"{errores_pct:.1f}% del total",  ROJO),
-        (ke3, "0",                "Errores extremos",       "bajo confundido con alto",        VERDE),
-        (ke4, f"{n_features}",    "Variables en el modelo", "features finales LightGBM",       AZUL_CLARO),
-    ]:
-        with col:
-            st.markdown(f"""<div class="kpi-card" style="border-top:3px solid {color}">
-              <div class="kpi-value" style="color:{color}">{val}</div>
-              <div class="kpi-label">{lbl}</div>
-              <div class="kpi-sub">{sub}</div>
-            </div>""", unsafe_allow_html=True)
-
-    st.markdown('<hr class="divider">', unsafe_allow_html=True)
-
-    # ── Feature importance (filtro top N) + errores
-    col_imp, col_err_plot = st.columns([1.1, 0.9], gap="large")
-
-    with col_imp:
-        st.markdown('<div class="section-header">Top 20 variables por importancia</div>', unsafe_allow_html=True)
-        st.markdown('<div class="section-sub">LightGBM gain · coloreadas por categoria · usa el slider del panel izquierdo</div>', unsafe_allow_html=True)
-
-        nombre_map = {
-            "operaciones_total": "Operaciones totales del mes",
-            "operaciones_vs_roll_mean_12": "Ops. vs media movil 12m",
-            "operaciones_vs_roll_mean_3": "Ops. vs media movil 3m",
-            "operaciones_por_destino": "Ops. por destino",
-            "operaciones_delta_1": "Variacion mensual de ops.",
-            "pasajeros_total_roll_mean_12": "Pasajeros (media 12m)",
-            "n_empresas_llegada": "N. aerolineas operando",
-            "n_destinos_total_lag_12": "Destinos (lag 12m)",
-            "cobertura_metar_ratio_lag_12": "Cobertura METAR (lag 12m)",
-            "viento_max_kt": "Viento maximo (kt)",
-            "prop_tormenta": "Proporcion tormentas",
-            "prop_niebla": "Proporcion niebla",
-            "visibilidad_rango_sm": "Rango visibilidad (sm)",
-            "pasajeros_por_operacion_lag_12": "Pasajeros/op (lag 12m)",
-            "meteo_adverso_score_lag_3": "Score meteo adverso lag 3m",
-            "prop_lluvia": "Proporcion lluvia",
-            "meteo_adverso_score_lag_2": "Score meteo adverso lag 2m",
-            "temp_min_c": "Temperatura minima (C)",
-            "meteo_adverso_score_lag_1": "Score meteo adverso lag 1m",
-            "meteo_adverso_score_roll_mean_12": "Score meteo adverso media 12m",
+        METEO_VARS = {
+            "Proporcion de lluvia mensual": {"bajo":0.048,"medio":0.041,"alto":0.035,"fmt":".1%","titulo":"Prop. lluvia"},
+            "Proporcion condiciones IFR":   {"bajo":0.041,"medio":0.033,"alto":0.026,"fmt":".1%","titulo":"Prop. IFR"},
+            "Proporcion de tormentas":      {"bajo":0.009,"medio":0.007,"alto":0.005,"fmt":".1%","titulo":"Prop. tormenta"},
+            "Proporcion de niebla":         {"bajo":0.012,"medio":0.010,"alto":0.008,"fmt":".1%","titulo":"Prop. niebla"},
+            "Viento medio (kt)":            {"bajo":5.8,  "medio":5.3,  "alto":4.9, "fmt":".1f","titulo":"Viento medio (kt)"},
+            "Visibilidad media (sm)":       {"bajo":7.4,  "medio":8.1,  "alto":8.9, "fmt":".1f","titulo":"Visibilidad (sm)"},
+            "Temperatura media (C)":        {"bajo":19.8, "medio":21.2, "alto":22.9,"fmt":".1f","titulo":"Temperatura (C)"},
         }
 
-        def cat_feature(f):
+        var_meteo = st.selectbox("Variable meteorologica", options=list(METEO_VARS.keys()), key="var_m")
+        d = METEO_VARS[var_meteo]
+        niveles_a = [n for n in ["bajo","medio","alto"] if n in nivel_sel] or ["bajo","medio","alto"]
+
+        fig_meteo = go.Figure()
+        for nivel in niveles_a:
+            fig_meteo.add_trace(go.Bar(
+                name=nivel.capitalize(),
+                x=[nivel.capitalize()],
+                y=[d[nivel]],
+                marker_color={"bajo":COLOR_BAJO,"medio":COLOR_MEDIO,"alto":COLOR_ALTO}[nivel],
+                text=[f'{d[nivel]:{d["fmt"]}}'],
+                textposition="outside",
+                textfont=dict(size=14),
+            ))
+        ymin = min(d[n] for n in niveles_a) * 0.87
+        ymax = max(d[n] for n in niveles_a) * 1.16
+        fig_meteo.update_layout(
+            height=300, showlegend=False,
+            margin=dict(l=0, r=0, t=20, b=0),
+            paper_bgcolor="white", plot_bgcolor="white",
+            xaxis=dict(title="Nivel de operacion", tickfont=dict(color="#64748B")),
+            yaxis=dict(title=d["titulo"], range=[ymin, ymax],
+                       showgrid=True, gridcolor="#F1F5F9", zeroline=False,
+                       tickfont=dict(color="#64748B")),
+            font=dict(family="Inter"),
+        )
+        st.plotly_chart(fig_meteo, use_container_width=True)
+
+        st.markdown("""
+        <div class="answer-box">
+          <strong>Si.</strong> Los aeropuertos con nivel bajo tienen consistentemente
+          mas lluvia, mas IFR y menor visibilidad. La meteorologia adversa
+          es un factor penalizador sistematico aunque no causal directo.
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col_fen:
+        st.markdown('<div class="section-q">Frecuencia de fenomenos adversos por nivel</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-sub">Proporcion media mensual de cada fenomeno segun clase de operacion</div>', unsafe_allow_html=True)
+
+        fig_fen = go.Figure()
+        for nivel in (nivel_sel or ["bajo","medio","alto"]):
+            if nivel in FENOMENOS.columns:
+                fig_fen.add_trace(go.Bar(
+                    name=nivel.capitalize(),
+                    x=FENOMENOS["fenomeno"],
+                    y=FENOMENOS[nivel],
+                    marker_color={"bajo":COLOR_BAJO,"medio":COLOR_MEDIO,"alto":COLOR_ALTO}[nivel],
+                    hovertemplate="<b>%{x}</b><br>" + nivel + ": %{y:.3f}<extra></extra>",
+                ))
+        fig_fen.update_layout(
+            barmode="group", height=300,
+            margin=dict(l=0, r=0, t=10, b=0),
+            paper_bgcolor="white", plot_bgcolor="white",
+            xaxis=dict(title="Fenomeno meteorologico", tickfont=dict(color="#64748B", size=11)),
+            yaxis=dict(title="Proporcion media mensual",
+                       showgrid=True, gridcolor="#F1F5F9", zeroline=False,
+                       tickfont=dict(color="#64748B")),
+            legend=dict(orientation="h", y=1.08, x=0.5, xanchor="center",
+                        font=dict(size=11)),
+            font=dict(family="Inter"),
+        )
+        st.plotly_chart(fig_fen, use_container_width=True)
+
+        st.markdown("""
+        <div class="answer-box alerta">
+          <strong>Quibdo y Florencia</strong> son los casos mas claros:
+          lluvia sistematicamente alta, condiciones IFR frecuentes
+          y nivel bajo estructural. Los hubs del Caribe tienen
+          mucho viento pero poca lluvia y operan en nivel alto.
+        </div>
+        """, unsafe_allow_html=True)
+
+
+# ══════════════════════════════════════════════
+# TAB 2 — VARIABLES DEL MODELO
+# ══════════════════════════════════════════════
+with tab2:
+
+    col_imp, col_cm = st.columns([1.1, 0.9], gap="large")
+
+    with col_imp:
+        st.markdown('<div class="section-q">¿Que variables usa el modelo para predecir?</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-sub">Top 15 por importancia (LightGBM gain) · azul = operacional · naranja = meteorologica · verde = geografica</div>', unsafe_allow_html=True)
+
+        nombre_map = {
+            "operaciones_total":            "Operaciones del mes",
+            "operaciones_vs_roll_mean_12":  "Ops. vs media 12m",
+            "operaciones_vs_roll_mean_3":   "Ops. vs media 3m",
+            "operaciones_por_destino":      "Ops. por destino",
+            "operaciones_delta_1":          "Variacion mensual",
+            "pasajeros_total_roll_mean_12": "Pasajeros media 12m",
+            "n_empresas_llegada":           "Aerolineas operando",
+            "n_destinos_total_lag_12":      "Destinos lag 12m",
+            "cobertura_metar_ratio_lag_12": "Cobertura METAR 12m",
+            "viento_max_kt":                "Viento maximo (kt)",
+            "prop_tormenta":                "Prop. tormentas",
+            "prop_niebla":                  "Prop. niebla",
+            "visibilidad_rango_sm":         "Rango visibilidad",
+            "meteo_adverso_score_lag_3":    "Score meteo adverso 3m",
+            "prop_lluvia":                  "Prop. lluvia",
+        }
+
+        def cat_f(f):
             if any(k in f for k in ["operaciones","pasajeros","carga","n_empresas","n_destinos"]):
                 return "Operacional"
             elif any(k in f for k in ["temp","viento","visib","niebla","lluvia","tormenta","rafaga","meteo","dewpoint","prop_"]):
                 return "Meteorologica"
             return "Geografica"
 
-        color_cat = {"Operacional": AZUL_CLARO, "Meteorologica": AMARILLO, "Geografica": CYAN}
-
-        df_fn = df_feat.head(20).sort_values("importance", ascending=True).copy()
-        df_fn["cat"]   = df_fn["feature"].apply(cat_feature)
+        color_cat = {"Operacional": CIELO, "Meteorologica": ALERTA, "Geografica": RADAR}
+        df_fn = df_feat.head(15).copy()
+        df_fn["cat"]   = df_fn["feature"].apply(cat_f)
         df_fn["label"] = df_fn["feature"].map(nombre_map).fillna(df_fn["feature"])
-
-        # Orden: Geografica primero, luego Meteorologica, luego Operacional
-        # Dentro de cada grupo: de menor a mayor importancia (para que el eje Y
-        # muestre las más importantes arriba al leer de abajo hacia arriba)
-        orden_cats = ["Geografica", "Meteorologica", "Operacional"]
-        cat_order_map = {c: i for i, c in enumerate(orden_cats)}
-        df_fn["cat_order"] = df_fn["cat"].map(cat_order_map)
-        df_fn_sorted = df_fn.sort_values(
-            ["cat_order", "importance"], ascending=[True, True]
-        )
+        df_fn["ord"]   = df_fn["cat"].map({"Geografica":0,"Meteorologica":1,"Operacional":2})
+        df_fn = df_fn.sort_values(["ord","importance"], ascending=[True,True])
 
         fig_imp = go.Figure()
-        for cat in orden_cats:
-            group = df_fn_sorted[df_fn_sorted["cat"] == cat]
-            if group.empty:
-                continue
+        for cat in ["Geografica","Meteorologica","Operacional"]:
+            g = df_fn[df_fn["cat"] == cat]
+            if g.empty: continue
             fig_imp.add_trace(go.Bar(
-                name=cat,
-                x=group["importance"],
-                y=group["label"],
-                orientation="h",
-                marker_color=color_cat[cat],
+                name=cat, x=g["importance"], y=g["label"],
+                orientation="h", marker_color=color_cat[cat],
                 hovertemplate=f"<b>%{{y}}</b><br>Importancia: %{{x:,}}<br>{cat}<extra></extra>",
             ))
         fig_imp.update_layout(
-            height=560,
-            barmode="stack",
-            margin=dict(l=0, r=20, t=10, b=10),
+            height=420, barmode="stack",
+            margin=dict(l=0, r=20, t=10, b=0),
             paper_bgcolor="white", plot_bgcolor="white",
-            legend=dict(orientation="h", yanchor="bottom", y=1.01, xanchor="left", x=0),
-            xaxis=dict(title="Importancia (LightGBM gain)", showgrid=True, gridcolor="#F1F5F9", zeroline=False),
-            yaxis=dict(title="Variable", tickfont=dict(size=10), categoryorder="array",
-                       categoryarray=df_fn_sorted["label"].tolist()),
-            font=dict(family="Space Grotesk"),
+            legend=dict(orientation="h", y=1.03, x=0, font=dict(size=11)),
+            xaxis=dict(title="Importancia (LightGBM gain)",
+                       showgrid=True, gridcolor="#F1F5F9", zeroline=False,
+                       tickfont=dict(color="#64748B")),
+            yaxis=dict(title="Variable",
+                       tickfont=dict(size=10, color="#64748B"),
+                       categoryorder="array",
+                       categoryarray=df_fn["label"].tolist()),
+            font=dict(family="Inter"),
         )
         st.plotly_chart(fig_imp, use_container_width=True)
 
-    with col_err_plot:
-        st.markdown('<div class="section-header">Distribucion de errores en test</div>', unsafe_allow_html=True)
-        st.markdown('<div class="section-sub">Tipo de error · verde = acierto · amarillo = error leve · rojo = error severo</div>', unsafe_allow_html=True)
+    with col_cm:
+        st.markdown('<div class="section-q">Matriz de confusion del modelo final</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-sub">Clase real (filas) vs clase predicha (columnas) · LightGBM en test</div>', unsafe_allow_html=True)
 
-        df_ep = df_err.sort_values("n", ascending=True).copy()
-        fig_err_f = go.Figure(go.Bar(
-            x=df_ep["n"], y=df_ep["tipo_error"], orientation="h",
-            marker_color=[VERDE if t == "acierto" else (AMARILLO if "medio" in t else ROJO)
-                          for t in df_ep["tipo_error"]],
-            text=[f'{v}  ({p:.1f}%)' for v, p in zip(df_ep["n"], df_ep["pct"])],
-            textposition="outside",
-            hovertemplate="<b>%{y}</b><br>Registros: %{x}<extra></extra>",
+        mat = np.array([
+            [meta["confusion_matrix_test_final"][r][c] for c in ["0","1","2"]]
+            for r in ["0","1","2"]
+        ], dtype=float)
+        mat_norm = mat / mat.sum(axis=1, keepdims=True)
+        textos = [
+            [f"<b>{int(mat[i][j])}</b><br>{mat_norm[i][j]:.0%}" for j in range(3)]
+            for i in range(3)
+        ]
+        fig_cm = go.Figure(go.Heatmap(
+            z=mat_norm,
+            x=["Bajo","Medio","Alto"],
+            y=["Bajo","Medio","Alto"],
+            colorscale=[[0,"#F0F9FF"],[0.5,"#7DD3FC"],[1,"#0369A1"]],
+            showscale=False,
+            text=textos, texttemplate="%{text}",
+            hovertemplate="Real: %{y}<br>Predicho: %{x}<br>%{z:.1%}<extra></extra>",
         ))
-        fig_err_f.update_layout(
-            height=260, margin=dict(l=0, r=110, t=10, b=10),
+        fig_cm.update_layout(
+            height=280,
+            margin=dict(l=0, r=0, t=10, b=30),
             paper_bgcolor="white", plot_bgcolor="white",
-            xaxis=dict(title="Numero de registros", showgrid=True, gridcolor="#F1F5F9", zeroline=False),
-            yaxis=dict(title="Tipo de prediccion", tickfont=dict(size=12)),
-            font=dict(family="Space Grotesk"),
+            xaxis=dict(title="Clase predicha", tickfont=dict(color="#64748B", size=12)),
+            yaxis=dict(title="Clase real", tickfont=dict(color="#64748B", size=12), autorange="reversed"),
+            font=dict(family="Inter"),
         )
-        st.plotly_chart(fig_err_f, use_container_width=True)
+        st.plotly_chart(fig_cm, use_container_width=True)
 
-        st.markdown("""
-        <div class="insight-box">
-          <strong>86.8% son aciertos.</strong> El 13.2% restante son errores simetricos
-          en una sola clase. Los aeropuertos <strong>en transicion</strong>
-          (creciendo o decreciendo) son el verdadero reto.
+        st.markdown(f"""
+        <div class="answer-box verde">
+          <strong>Accuracy {accuracy:.1%} · Macro F1 {macro_f1:.1%}</strong><br><br>
+          El modelo nunca confunde los extremos (bajo↔alto = 0 errores).
+          Los errores ocurren solo entre clases adyacentes, que corresponden
+          a aeropuertos en transicion operacional.
         </div>
         """, unsafe_allow_html=True)
 
-    st.markdown('<hr class="divider">', unsafe_allow_html=True)
-
-    # ── Correlaciones + fenomenos (filtro clases)
-    col_corr, col_fen = st.columns([1, 1], gap="large")
-
-    with col_corr:
-        st.markdown('<div class="section-header">Correlaciones con el target (Spearman)</div>', unsafe_allow_html=True)
-        st.markdown('<div class="section-sub">Variables operacionales: fuerte positiva · meteorologicas: debil negativa</div>', unsafe_allow_html=True)
-
-        df_corr = pd.DataFrame(CORR_DATA).sort_values("correlacion")
-        fig_corr = go.Figure(go.Bar(
-            x=df_corr["correlacion"],
-            y=df_corr["variable"],
-            orientation="h",
-            marker_color=[AZUL_CLARO if v > 0 else ROJO for v in df_corr["correlacion"]],
-            text=[f'{v:+.2f}' for v in df_corr["correlacion"]],
-            textposition="outside",
-            hovertemplate="<b>%{y}</b><br>Spearman: %{x:.3f}<extra></extra>",
-        ))
-        fig_corr.add_vline(x=0, line_color="#94A3B8", line_width=1)
-        fig_corr.add_vline(x=0.7,  line_dash="dot", line_color=AZUL_CLARO, opacity=0.5,
-                           annotation_text="r=0.7", annotation_font=dict(size=10, color=AZUL_CLARO))
-        fig_corr.update_layout(
-            height=420, margin=dict(l=0, r=70, t=10, b=10),
-            paper_bgcolor="white", plot_bgcolor="white",
-            xaxis=dict(title="Correlacion de Spearman", range=[-0.35, 1.0],
-                       showgrid=True, gridcolor="#F1F5F9", zeroline=False),
-            yaxis=dict(title="Variable", tickfont=dict(size=11, family="DM Mono")),
-            font=dict(family="Space Grotesk"),
-        )
-        st.plotly_chart(fig_corr, use_container_width=True)
-
-    with col_fen:
-        st.markdown('<div class="section-header">Fenomenos adversos por clase del target</div>', unsafe_allow_html=True)
-        st.markdown('<div class="section-sub">Proporcion media mensual · filtra clases desde el panel izquierdo</div>', unsafe_allow_html=True)
-
-        df_fen = pd.DataFrame(FENOMENOS_DATA)
-        fig_fen = go.Figure()
-        color_map_clase = {"bajo": COLOR_BAJO, "medio": COLOR_MEDIO, "alto": COLOR_ALTO}
-
-        clases_activas = clases_sel if clases_sel else ["bajo", "medio", "alto"]
-        for nivel in clases_activas:
-            if nivel in df_fen.columns:
-                fig_fen.add_trace(go.Bar(
-                    name=nivel.capitalize(),
-                    x=df_fen["fenomeno"], y=df_fen[nivel],
-                    marker_color=color_map_clase[nivel],
-                    hovertemplate=f"<b>%{{x}}</b><br>{nivel}: %{{y:.3f}}<extra></extra>",
-                ))
-        fig_fen.update_layout(
-            barmode="group", height=300,
-            margin=dict(l=0, r=0, t=10, b=10),
-            paper_bgcolor="white", plot_bgcolor="white",
-            xaxis=dict(title="Fenomeno meteorologico", tickfont=dict(size=11)),
-            yaxis=dict(title="Proporcion media mensual", showgrid=True, gridcolor="#F1F5F9"),
-            legend=dict(orientation="h", y=1.1, x=0.5, xanchor="center"),
-            font=dict(family="Space Grotesk"),
-        )
-        st.plotly_chart(fig_fen, use_container_width=True)
-
-        st.markdown("""
-        <div class="insight-box">
-          Los aeropuertos de clase <strong>bajo</strong> tienen sistematicamente mas lluvia,
-          niebla e IFR. La infraestructura de los grandes hubs los hace mas resilientes.
-        </div>
-        """, unsafe_allow_html=True)
-
-    st.markdown('<hr class="divider">', unsafe_allow_html=True)
-
-    # ── Conclusiones en grid 2x2 ───────────────
-    st.markdown('<div class="section-header">Del hallazgo tecnico a la decision de negocio</div>', unsafe_allow_html=True)
-    st.markdown('<div class="section-sub">Cuatro conclusiones accionables del analisis completo</div>', unsafe_allow_html=True)
-
-    insights = [
-        ("El historial operacional manda",
-         "Las 5 variables mas importantes son <b>operacionales</b>. La historia de vuelos predice mejor el futuro que cualquier variable meteorologica."),
-        ("La estacionalidad anual es real",
-         "Variables con <b>lag_12</b> aparecen repetidamente. El comportamiento de hace un año es el mejor predictor para el mismo mes del año siguiente."),
-        ("La meteorologia adversa penaliza aeropuertos pequeños",
-         "Los aeropuertos de clase <b>bajo</b> tienen sistematicamente mas lluvia, niebla y condiciones IFR. Los hubs grandes son mas resilientes."),
-        ("Accion recomendada",
-         "Aeropuerto con operaciones <b>por encima de su media movil de 12 meses</b> y score meteo adverso bajo: alta probabilidad de mes <b>alto</b> el siguiente. Ese es el momento de asignar recursos."),
-    ]
-    col1, col2 = st.columns(2)
-    for i, (titulo, texto) in enumerate(insights):
-        col = col1 if i % 2 == 0 else col2
-        with col:
-            st.markdown(f"""<div class="insight-box" style="margin-bottom:0.8rem">
-              <strong>{titulo}</strong><br>
-              <span style='font-size:0.86rem'>{texto}</span>
-            </div>""", unsafe_allow_html=True)
 
 # ══════════════════════════════════════════════
-# TAB 2 — EDA
+# TAB 3 — COMPARATIVA DE MODELOS
 # ══════════════════════════════════════════════
-with tab2:
+with tab3:
 
+    st.markdown('<div class="section-q">¿Por que LightGBM?</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-sub">Macro F1 promedio en validacion por modelo · azul = ganador</div>', unsafe_allow_html=True)
 
-    # ══════════════════════════════════════════
-    # SECCION 1 — EXPLORATORIO
-    # ══════════════════════════════════════════
-    st.markdown("""
-    <div style="background:#2563EB;color:white;border-radius:10px;padding:0.6rem 1.2rem;margin-bottom:1.2rem">
-      <span style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em">Fase 1 - Analisis Exploratorio</span>
-      <span style="font-size:0.85rem;margin-left:1rem;opacity:0.85">¿Que hay en los datos? ¿Como se distribuyen?</span>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # ── KPIs de cobertura ─────────────────────
-    st.markdown('<div class="section-header">Cobertura del dataset</div>', unsafe_allow_html=True)
-    st.markdown('<div class="section-sub">Estructura y alcance del dataset Gold construido en el pipeline</div>', unsafe_allow_html=True)
-
-    ke1, ke2, ke3, ke4, ke5 = st.columns(5)
-    for col, val, lbl, sub, color in [
-        (ke1, "46",      "Aeropuertos",       "en el modelo final",        AZUL_CLARO),
-        (ke2, "22",      "Aeropuertos grandes",    "hubs principales",          VERDE),
-        (ke3, "18",      "Aeropuertos medianos",   "aeropuertos regionales",    AMARILLO),
-        (ke4, "6",       "Aeropuertos pequeños",    "pistas locales",            CYAN),
-        (ke5, "2020–2025", "Periodo cubierto",  "72 meses de datos",         "#64748B"),
-    ]:
-        with col:
-            st.markdown(f"""<div class="kpi-card" style="border-top:3px solid {color}">
-              <div class="kpi-value" style="color:{color};font-size:1.5rem">{val}</div>
-              <div class="kpi-label">{lbl}</div>
-              <div class="kpi-sub">{sub}</div>
-            </div>""", unsafe_allow_html=True)
-
-    st.markdown('<hr class="divider">', unsafe_allow_html=True)
-
-    # ── Distribuciones meteorologicas + proporcion fenomenos ──
-    col_meteo, col_fen_exp = st.columns([1, 1], gap="large")
-
-    with col_meteo:
-        st.markdown('<div class="section-header">Distribucion de variables meteorologicas</div>', unsafe_allow_html=True)
-        st.markdown('<div class="section-sub">Vista global sin separar por clase · exploracion inicial de rangos y forma</div>', unsafe_allow_html=True)
-
-        # Datos representativos de las distribuciones del EDA
-        METEO_DIST = {
-            "temp_media_c":        {"media": 21.4, "std": 5.8,  "min": 4.2,  "max": 33.1, "label": "Temperatura media (C)"},
-            "humedad_media_pct":   {"media": 74.2, "std": 12.1, "min": 32.0, "max": 97.0, "label": "Humedad media (%)"},
-            "viento_medio_kt":     {"media": 5.3,  "std": 3.9,  "min": 0.0,  "max": 22.4, "label": "Viento medio (kt)"},
-            "visibilidad_media_sm":{"media": 8.1,  "std": 3.2,  "min": 1.0,  "max": 10.0, "label": "Visibilidad media (sm)"},
-        }
-
-        var_sel = st.selectbox(
-            "Variable meteorologica",
-            options=list(METEO_DIST.keys()),
-            format_func=lambda k: METEO_DIST[k]["label"],
-            key="meteo_var_sel",
-        )
-
-        d = METEO_DIST[var_sel]
-        np.random.seed(42)
-        sim_data = np.random.normal(d["media"], d["std"], 800)
-        sim_data = np.clip(sim_data, d["min"], d["max"])
-
-        fig_hist = go.Figure()
-        fig_hist.add_trace(go.Histogram(
-            x=sim_data, nbinsx=35,
-            marker_color=AZUL_CLARO, opacity=0.75,
-            name=d["label"],
-            hovertemplate="Rango: %{x}<br>Frecuencia: %{y}<extra></extra>",
-        ))
-        fig_hist.add_vline(x=d["media"], line_dash="dash", line_color=ROJO, line_width=2,
-                           annotation_text=f" Media: {d['media']:.1f}",
-                           annotation_font=dict(color=ROJO, size=11))
-        fig_hist.update_layout(
-            height=280, margin=dict(l=0, r=0, t=10, b=10),
-            paper_bgcolor="white", plot_bgcolor="white",
-            showlegend=False,
-            xaxis=dict(title=d["label"], showgrid=False, zeroline=False),
-            yaxis=dict(title="Frecuencia", showgrid=True, gridcolor="#F1F5F9"),
-            font=dict(family="Space Grotesk"),
-        )
-        st.plotly_chart(fig_hist, use_container_width=True)
-
-    with col_fen_exp:
-        st.markdown('<div class="section-header">Frecuencia global de fenomenos adversos</div>', unsafe_allow_html=True)
-        st.markdown('<div class="section-sub">Proporcion media mensual en todos los aeropuertos · sin distinguir clase</div>', unsafe_allow_html=True)
-
-        df_fen_global = pd.DataFrame({
-            "fenomeno": ["Lluvia", "IFR aprox.", "Baja visib.", "Viento fuerte", "Rafaga", "Niebla", "Tormenta"],
-            "proporcion": [0.042, 0.033, 0.027, 0.016, 0.018, 0.010, 0.007],
-        }).sort_values("proporcion")
-
-        fig_fen_g = go.Figure(go.Bar(
-            x=df_fen_global["proporcion"],
-            y=df_fen_global["fenomeno"],
-            orientation="h",
-            marker_color=AZUL_CLARO,
-            text=[f'{v:.1%}' for v in df_fen_global["proporcion"]],
-            textposition="outside",
-            hovertemplate="<b>%{y}</b><br>Proporcion: %{x:.3f}<extra></extra>",
-        ))
-        fig_fen_g.update_layout(
-            height=280, margin=dict(l=0, r=60, t=10, b=10),
-            paper_bgcolor="white", plot_bgcolor="white",
-            xaxis=dict(title="Proporcion media mensual", showgrid=True, gridcolor="#F1F5F9", zeroline=False, showticklabels=False),
-            yaxis=dict(title="Fenomeno meteorologico", tickfont=dict(size=12)),
-            font=dict(family="Space Grotesk"),
-        )
-        st.plotly_chart(fig_fen_g, use_container_width=True)
-
-    st.markdown('<hr class="divider">', unsafe_allow_html=True)
-
-    # ── Concentracion + Llegadas vs Salidas ───
-    col_lorenz, col_ops_dist = st.columns([1, 1], gap="large")
-
-    with col_lorenz:
-        st.markdown('<div class="section-header">Concentracion de operaciones por aeropuerto</div>', unsafe_allow_html=True)
-        st.markdown('<div class="section-sub">Curva de Lorenz · ¿cuantos aeropuertos concentran la mayoria del trafico?</div>', unsafe_allow_html=True)
-
-        ops_por_aero = np.array(sorted([
-            222450,98320,91100,87640,85200,82300,71500,63400,
-            58900,54200,51800,49300,46700,43200,41500,38200,
-            35100,32400,29800,27600,25100,22800,20500,18900,
-            16700,14500,12300,10800,9200,8100,6900,5800,
-            4700,3900,3100,2600,2100,1800,1400,1100,
-            900,700,500,350,200,100,
-        ]))
-        total_ops = ops_por_aero.sum()
-        cumsum    = ops_por_aero.cumsum() / total_ops * 100
-        x_pct     = np.linspace(0, 100, len(cumsum))
-
-        top10_idx = int(len(ops_por_aero) * 0.90)
-        pct_top10 = 100 - cumsum[top10_idx]
-
-        fig_lorenz = go.Figure()
-        fig_lorenz.add_trace(go.Scatter(
-            x=x_pct, y=x_pct,
-            line=dict(color="#CBD5E1", width=1.5, dash="dash"),
-            name="Distribucion uniforme",
-            hoverinfo="skip",
-        ))
-        fig_lorenz.add_trace(go.Scatter(
-            x=x_pct, y=cumsum,
-            fill="tonexty", fillcolor="rgba(37,99,235,0.08)",
-            line=dict(color=AZUL_CLARO, width=2.5),
-            name="Concentracion real",
-            hovertemplate="Top %{x:.0f}% aeropuertos → %{y:.1f}% de operaciones<extra></extra>",
-        ))
-        fig_lorenz.add_annotation(
-            x=90, y=cumsum[top10_idx],
-            text=f"Top 10%<br>aeropuertos =<br>{pct_top10:.0f}% de ops.",
-            showarrow=True, arrowhead=2, arrowcolor=ROJO,
-            font=dict(color=ROJO, size=10), ax=-60, ay=-40,
-        )
-        fig_lorenz.update_layout(
-            height=300, margin=dict(l=0, r=0, t=10, b=10),
-            paper_bgcolor="white", plot_bgcolor="white",
-            xaxis=dict(title="% aeropuertos acumulados (menor a mayor)", showgrid=True, gridcolor="#F1F5F9", range=[0,100]),
-            yaxis=dict(title="% operaciones acumuladas", showgrid=True, gridcolor="#F1F5F9", range=[0,100]),
-            legend=dict(orientation="h", y=1.08, x=0.5, xanchor="center"),
-            font=dict(family="Space Grotesk"),
-        )
-        st.plotly_chart(fig_lorenz, use_container_width=True)
-
-    with col_ops_dist:
-        st.markdown('<div class="section-header">Proporcion de llegadas vs salidas</div>', unsafe_allow_html=True)
-        st.markdown('<div class="section-sub">¿Los aeropuertos tienen simetria operacional? · distribucion de la proporcion de llegadas</div>', unsafe_allow_html=True)
-
-        np.random.seed(7)
-        prop_llegadas = np.random.beta(9, 9, 600)
-
-        fig_llegadas = go.Figure()
-        fig_llegadas.add_trace(go.Histogram(
-            x=prop_llegadas, nbinsx=30,
-            marker_color=CYAN, opacity=0.8,
-            hovertemplate="Proporcion: %{x:.2f}<br>Frecuencia: %{y}<extra></extra>",
-        ))
-        fig_llegadas.add_vline(x=0.5, line_dash="dash", line_color=ROJO, line_width=2,
-                               annotation_text=" 50% llegadas",
-                               annotation_font=dict(color=ROJO, size=11))
-        fig_llegadas.update_layout(
-            height=300, margin=dict(l=0, r=0, t=10, b=10),
-            paper_bgcolor="white", plot_bgcolor="white",
-            showlegend=False,
-            xaxis=dict(title="Proporcion de llegadas sobre total de operaciones", showgrid=False, zeroline=False),
-            yaxis=dict(title="Frecuencia", showgrid=True, gridcolor="#F1F5F9"),
-            font=dict(family="Space Grotesk"),
-        )
-        st.plotly_chart(fig_llegadas, use_container_width=True)
-
-    # ══════════════════════════════════════════
-    # SECCION 2 — ACLARATORIO
-    # ══════════════════════════════════════════
-    st.markdown("""
-    <div style="background:#10B981;color:white;border-radius:10px;padding:0.6rem 1.2rem;margin:1.5rem 0 1.2rem 0">
-      <span style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em">Fase 2 - Analisis Aclaratorio</span>
-      <span style="font-size:0.85rem;margin-left:1rem;opacity:0.85">Cada grafica tiene un mensaje de negocio especifico</span>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # ── Variables meteorologicas por clase ────
-    st.markdown('<div class="section-header">Variables meteorologicas por clase del target</div>', unsafe_allow_html=True)
-    st.markdown('<div class="section-sub">Mismo dato que antes, ahora con intencion: ¿la meteorologia adversa predice operacion baja?</div>', unsafe_allow_html=True)
-
-    METEO_POR_CLASE = {
-        "Temperatura media (C)":        {"bajo": 19.8, "medio": 21.2, "alto": 22.9},
-        "Humedad media (%)":            {"bajo": 77.4, "medio": 74.1, "alto": 71.2},
-        "Viento medio (kt)":            {"bajo": 5.8,  "medio": 5.3,  "alto": 4.9},
-        "Visibilidad media (sm)":       {"bajo": 7.4,  "medio": 8.1,  "alto": 8.9},
-        "Prop. lluvia":                 {"bajo": 0.048,"medio": 0.041,"alto": 0.035},
-        "Prop. IFR aprox.":             {"bajo": 0.041,"medio": 0.033,"alto": 0.026},
-    }
-
-    meteo_var_acl = st.selectbox(
-        "Variable a comparar por clase",
-        options=list(METEO_POR_CLASE.keys()),
-        key="meteo_acl_sel",
+    modelos_disponibles = sorted(df_val["model_name"].unique().tolist())
+    modelos_sel = st.multiselect(
+        "Modelos a mostrar",
+        options=modelos_disponibles,
+        default=modelos_disponibles,
+        key="mod_sel",
     )
 
-    vals_acl = METEO_POR_CLASE[meteo_var_acl]
-    fig_acl = go.Figure()
-    for clase, color in [("bajo", COLOR_BAJO), ("medio", COLOR_MEDIO), ("alto", COLOR_ALTO)]:
-        fig_acl.add_trace(go.Bar(
-            name=clase.capitalize(),
-            x=[clase.capitalize()],
-            y=[vals_acl[clase]],
-            marker_color=color,
-            text=[f'{vals_acl[clase]:.3f}' if vals_acl[clase] < 1 else f'{vals_acl[clase]:.1f}'],
-            textposition="outside",
-            textfont=dict(size=14),
-            hovertemplate=f"<b>{clase.capitalize()}</b><br>{meteo_var_acl}: {vals_acl[clase]}<extra></extra>",
-        ))
+    df_base = df_val[~df_val["experiment_id"].str.contains("hp|optuna", case=False)].copy()
+    if modelos_sel:
+        df_base = df_base[df_base["model_name"].isin(modelos_sel)]
+    df_agg = (df_base.groupby("model_name")["macro_f1"]
+              .mean().reset_index().sort_values("macro_f1", ascending=True))
 
-    # Calcular rango dinamico
-    yvals = list(vals_acl.values())
-    ymin  = min(yvals) * 0.90
-    ymax  = max(yvals) * 1.12
-
-    fig_acl.update_layout(
-        height=280, showlegend=False,
-        margin=dict(l=0, r=0, t=20, b=10),
+    fig_mod = go.Figure(go.Bar(
+        x=df_agg["macro_f1"],
+        y=df_agg["model_name"],
+        orientation="h",
+        marker_color=[CIELO if m == "LightGBM" else "#CBD5E1" for m in df_agg["model_name"]],
+        text=[f'{v:.1%}' for v in df_agg["macro_f1"]],
+        textposition="outside",
+        textfont=dict(size=12),
+        hovertemplate="<b>%{y}</b><br>Macro F1: %{x:.3f}<extra></extra>",
+    ))
+    fig_mod.add_vline(x=0.85, line_dash="dot", line_color=CIELO, opacity=0.6,
+                      annotation_text=" 85%",
+                      annotation_font=dict(size=10, color=CIELO))
+    fig_mod.update_layout(
+        height=300,
+        margin=dict(l=0, r=70, t=10, b=0),
         paper_bgcolor="white", plot_bgcolor="white",
-        xaxis=dict(title="Clase del target (mes siguiente)", tickfont=dict(size=13)),
-        yaxis=dict(title=meteo_var_acl, range=[ymin, ymax],
-                   showgrid=True, gridcolor="#F1F5F9", zeroline=False),
-        font=dict(family="Space Grotesk"),
+        xaxis=dict(title="Macro F1", tickformat=".0%",
+                   range=[0.55, 0.97],
+                   showgrid=True, gridcolor="#F1F5F9",
+                   zeroline=False, tickfont=dict(color="#64748B")),
+        yaxis=dict(title="Modelo", tickfont=dict(color="#64748B", size=11)),
+        font=dict(family="Inter"),
     )
-    st.plotly_chart(fig_acl, use_container_width=True)
+    st.plotly_chart(fig_mod, use_container_width=True)
 
     st.markdown("""
-    <div class="insight-box" style="border-left-color:#10B981;background:linear-gradient(135deg,#F0FDF4,#ECFDF5)">
-      <strong>Mensaje aclaratorio:</strong> Los aeropuertos de clase <strong>bajo</strong>
-      tienen sistematicamente peores condiciones meteorologicas: mas lluvia, mas IFR,
-      mayor humedad y menor visibilidad. La meteorologia no causa directamente el nivel bajo,
-      pero es una señal complementaria que el modelo aprovecha.
+    <div class="answer-box">
+      <strong>LightGBM supera a la Regresion Logistica por mas de 20 puntos</strong>
+      de Macro F1. El problema tiene no-linearidades importantes:
+      las interacciones entre variables operacionales y meteorologicas
+      que solo los modelos basados en arboles capturan bien.
     </div>
     """, unsafe_allow_html=True)
-
-    st.markdown('<hr class="divider">', unsafe_allow_html=True)
-
-    # ── Pasajeros + conectividad por clase ────
-    col_pax, col_int = st.columns([1, 1], gap="large")
-
-    with col_pax:
-        st.markdown('<div class="section-header">Pasajeros y conectividad por clase</div>', unsafe_allow_html=True)
-        st.markdown('<div class="section-sub">Mensaje: mas destinos y mas pasajeros anticipan clase alto</div>', unsafe_allow_html=True)
-
-        PAX_CLASE = {
-            "Pasajeros totales (miles)": {"bajo": 12.4,  "medio": 48.7,  "alto": 142.3},
-            "N. destinos distintos":     {"bajo": 2.1,   "medio": 4.8,   "alto": 9.3},
-            "Aerolineas operando":       {"bajo": 1.4,   "medio": 2.9,   "alto": 5.2},
-        }
-
-        metric_pax = st.selectbox(
-            "Metrica de conectividad",
-            options=list(PAX_CLASE.keys()),
-            key="pax_sel",
-        )
-
-        vals_pax = PAX_CLASE[metric_pax]
-        fig_pax = go.Figure()
-        for clase, color in [("bajo", COLOR_BAJO), ("medio", COLOR_MEDIO), ("alto", COLOR_ALTO)]:
-            fig_pax.add_trace(go.Bar(
-                name=clase.capitalize(),
-                x=[clase.capitalize()],
-                y=[vals_pax[clase]],
-                marker_color=color,
-                text=[f'{vals_pax[clase]:.1f}'],
-                textposition="outside",
-                textfont=dict(size=14),
-            ))
-        yvals_p = list(vals_pax.values())
-        fig_pax.update_layout(
-            height=280, showlegend=False,
-            margin=dict(l=0, r=0, t=20, b=10),
-            paper_bgcolor="white", plot_bgcolor="white",
-            xaxis=dict(title="Clase del target (mes siguiente)", tickfont=dict(size=13)),
-            yaxis=dict(title=metric_pax, range=[0, max(yvals_p)*1.18],
-                       showgrid=True, gridcolor="#F1F5F9", zeroline=False),
-            font=dict(family="Space Grotesk"),
-        )
-        st.plotly_chart(fig_pax, use_container_width=True)
-
-        st.markdown("""
-        <div class="insight-box" style="border-left-color:#10B981;background:linear-gradient(135deg,#F0FDF4,#ECFDF5)">
-          <strong>Mensaje aclaratorio:</strong> La clase <strong>alto</strong> tiene
-          en promedio <strong>4x mas pasajeros</strong> y <strong>4x mas destinos</strong>
-          que la clase bajo. La conectividad es el predictor mas poderoso del nivel operativo.
-        </div>
-        """, unsafe_allow_html=True)
-
-    with col_int:
-        st.markdown('<div class="section-header">Proporcion de pasajeros internacionales por clase</div>', unsafe_allow_html=True)
-        st.markdown('<div class="section-sub">Mensaje: los hubs internacionales tienden a clase alto</div>', unsafe_allow_html=True)
-
-        INT_CLASE = {
-            "bajo":  0.031,
-            "medio": 0.087,
-            "alto":  0.198,
-        }
-
-        fig_int = go.Figure()
-        for clase, color in [("bajo", COLOR_BAJO), ("medio", COLOR_MEDIO), ("alto", COLOR_ALTO)]:
-            fig_int.add_trace(go.Bar(
-                name=clase.capitalize(),
-                x=[clase.capitalize()],
-                y=[INT_CLASE[clase]],
-                marker_color=color,
-                text=[f'{INT_CLASE[clase]:.1%}'],
-                textposition="outside",
-                textfont=dict(size=14),
-            ))
-        fig_int.update_layout(
-            height=280, showlegend=False,
-            margin=dict(l=0, r=0, t=20, b=10),
-            paper_bgcolor="white", plot_bgcolor="white",
-            xaxis=dict(title="Clase del target (mes siguiente)", tickfont=dict(size=13)),
-            yaxis=dict(title="Proporcion de pasajeros internacionales",
-                       tickformat=".0%", range=[0, 0.26],
-                       showgrid=True, gridcolor="#F1F5F9", zeroline=False),
-            font=dict(family="Space Grotesk"),
-        )
-        st.plotly_chart(fig_int, use_container_width=True)
-
-        st.markdown("""
-        <div class="insight-box" style="border-left-color:#10B981;background:linear-gradient(135deg,#F0FDF4,#ECFDF5)">
-          <strong>Mensaje aclaratorio:</strong> Los aeropuertos de clase <strong>alto</strong>
-          tienen 6x mas trafico internacional que los de clase bajo.
-          Los <strong>hubs con vuelos internacionales</strong> son estructuralmente
-          de alta operacion.
-        </div>
-        """, unsafe_allow_html=True)
-
-    st.markdown('<hr class="divider">', unsafe_allow_html=True)
-
-    # ── Operaciones actuales por clase ────────
-    st.markdown('<div class="section-header">Distribucion de operaciones actuales por clase del target del mes siguiente</div>', unsafe_allow_html=True)
-    st.markdown('<div class="section-sub">Mensaje clave: el volumen operacional del mes actual anticipa el nivel del mes siguiente</div>', unsafe_allow_html=True)
-
-    np.random.seed(42)
-    ops_bajo  = np.random.exponential(scale=80,  size=400)
-    ops_medio = np.random.exponential(scale=250, size=400) + 50
-    ops_alto  = np.random.exponential(scale=600, size=400) + 200
-    ops_bajo  = np.clip(ops_bajo,  5,  800)
-    ops_medio = np.clip(ops_medio, 50, 2000)
-    ops_alto  = np.clip(ops_alto,  200,5000)
-
-    fig_ops_clase = go.Figure()
-    for datos, clase, color in [
-        (ops_bajo,  "Bajo",  COLOR_BAJO),
-        (ops_medio, "Medio", COLOR_MEDIO),
-        (ops_alto,  "Alto",  COLOR_ALTO),
-    ]:
-        fig_ops_clase.add_trace(go.Violin(
-            x=[clase]*len(datos),
-            y=datos,
-            name=clase,
-            fillcolor=color,
-            line_color=color,
-            opacity=0.7,
-            box_visible=True,
-            meanline_visible=True,
-            hovertemplate=f"<b>{clase}</b><br>Operaciones: %{{y:,.0f}}<extra></extra>",
-        ))
-    fig_ops_clase.update_layout(
-        height=340,
-        showlegend=False,
-        margin=dict(l=0, r=0, t=10, b=10),
-        paper_bgcolor="white", plot_bgcolor="white",
-        xaxis=dict(title="Clase del target (mes siguiente)", tickfont=dict(size=13)),
-        yaxis=dict(title="Operaciones totales en el mes actual",
-                   showgrid=True, gridcolor="#F1F5F9", zeroline=False),
-        font=dict(family="Space Grotesk"),
-    )
-    st.plotly_chart(fig_ops_clase, use_container_width=True)
-
-    st.markdown("""
-    <div class="insight-box" style="border-left-color:#10B981;background:linear-gradient(135deg,#F0FDF4,#ECFDF5)">
-      <strong>Mensaje aclaratorio:</strong> Las distribuciones de operaciones actuales
-      se <strong>separan claramente entre clases</strong>. Un aeropuerto con mas de 500
-      operaciones en el mes actual casi nunca cae en clase bajo el mes siguiente.
-      Esta es la base del poder predictivo del modelo: <strong>el presente anticipa el futuro</strong>.
-    </div>
-    """, unsafe_allow_html=True)
-
-    st.markdown('<hr class="divider">', unsafe_allow_html=True)
-
-    # ── Resumen del arco narrativo ─────────────
-    st.markdown('<div class="section-header">Del dato al argumento: el arco narrativo del EDA</div>', unsafe_allow_html=True)
-    st.markdown('<div class="section-sub">Como evolucionamos del analisis libre a la comunicacion con proposito</div>', unsafe_allow_html=True)
-
-    pasos = [
-        (AZUL_CLARO, "1. Dato",
-         "Abril tuvo 312 operaciones en SKBO.",
-         "El hecho crudo, sin interpretacion."),
-        (AZUL_CLARO, "2. Contexto",
-         "La media historica de SKBO es 3.200 ops/mes.",
-         "312 es muy bajo. Ahora el dato significa algo."),
-        (AMARILLO,   "3. Patron",
-         "Todos los aeropuertos cayeron entre marzo y agosto 2020.",
-         "No es un caso aislado. Es una anomalia sistemica: COVID."),
-        (AMARILLO,   "4. Significado",
-         "Las restricciones de movilidad colapsaron la demanda aerea.",
-         "Conecta el que con el por que."),
-        (VERDE,      "5. Llamada a la accion",
-         "El modelo debe entrenarse excluyendo o ponderando 2020 como anomalia.",
-         "Sin esto, el analisis es entretenimiento, no herramienta."),
-    ]
-
-    cols_pasos = st.columns(5)
-    for col, (color, titulo, ejemplo, desc) in zip(cols_pasos, pasos):
-        with col:
-            st.markdown(f"""
-            <div style="background:white;border-radius:12px;padding:1rem;border:1px solid #E2E8F0;
-                        border-top:4px solid {color};height:100%">
-              <div style="font-size:0.72rem;font-weight:700;color:{color};text-transform:uppercase;
-                          letter-spacing:0.07em;margin-bottom:0.4rem">{titulo}</div>
-              <div style="font-size:0.82rem;font-weight:600;color:#0A1628;margin-bottom:0.4rem">{ejemplo}</div>
-              <div style="font-size:0.75rem;color:#64748B">{desc}</div>
-            </div>""", unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────
 # FOOTER
 # ─────────────────────────────────────────────
-st.markdown('<hr class="divider">', unsafe_allow_html=True)
 st.markdown(f"""
-<div style="text-align:center;color:#94A3B8;font-size:0.78rem;font-family:'Space Grotesk';padding-bottom:1rem">
+<div style="text-align:center;color:#94A3B8;font-size:0.72rem;
+            font-family:'Inter';padding:0.8rem 2rem 1.2rem 2rem;
+            border-top:1px solid #F1F5F9;margin-top:1rem">
   SI7007 Visualizacion de Datos · Universidad EAFIT · 2026 ·
-  Modelo: <b style="color:#64748B">LightGBM (M03)</b> ·
-  Dataset: <b style="color:#64748B">{dataset_cfg}</b> ·
-  Test accuracy: <b style="color:#10B981">{accuracy:.1%}</b>
+  LightGBM · Accuracy <b style="color:#10B981">{accuracy:.1%}</b> ·
+  Macro F1 <b style="color:#10B981">{macro_f1:.1%}</b>
 </div>
 """, unsafe_allow_html=True)
